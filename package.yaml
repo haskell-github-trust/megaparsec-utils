@@ -1,0 +1,46 @@
+name:       megaparsec-utils
+version:    0.1.0.0
+license:    GPL-3
+author:     drlkf
+maintainer: drlkf@drlkf.net
+copyright:  2024 drlkf
+
+extra-source-files:
+- README.org
+- CHANGELOG.md
+
+description: Utilities for the Megaparsec library.
+
+dependencies:
+  - base >= 4.7 && < 5
+  - megaparsec
+  - parser-combinators
+  - uuid
+
+ghc-options:
+  - -Wall
+  - -Werror
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wmissing-export-lists
+  - -Wmissing-home-modules
+  - -Wpartial-fields
+  - -Wredundant-constraints
+
+library:
+  source-dirs: src
+
+tests:
+  megaparsec-utils-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - megaparsec-utils
+      - hspec
+      - QuickCheck
