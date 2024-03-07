@@ -13,8 +13,10 @@ description: Utilities for the Megaparsec library.
 
 dependencies:
   - base >= 4.7 && < 5
+  - extra
   - megaparsec
   - parser-combinators
+  - time
   - uuid
 
 ghc-options:
