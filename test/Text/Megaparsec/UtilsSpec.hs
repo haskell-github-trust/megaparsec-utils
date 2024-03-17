@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Text.Megaparsec.UtilsSpec
@@ -25,8 +24,10 @@ import           Text.Megaparsec                 (Parsec, eof, parseMaybe,
 import           Text.Megaparsec.Char            (alphaNumChar, char, digitChar,
                                                   string)
 import           Text.Megaparsec.Utils           (boundedEnumShowParser,
-                                                  commaSeparated, occurrence,
-                                                  occurrences)
+                                                  commaSeparated, numParser,
+                                                  occurrence, occurrences,
+                                                  posDecNumParser, posNumParser)
+import           Text.Printf                     (printf)
 
 newtype SomeData = SomeData Int
   deriving Eq
@@ -112,6 +113,21 @@ spec = do
     it "SomeADT" . property $ \v ->
       parseMaybe someADTParser (show (v :: SomeADT)) `shouldBe` Just v
 
+    context "posDecNumParser" $ do
+      it "no decimals" . property $ \v ->
+        parseMaybe posDecNumParser (show (abs (v :: Int))) `shouldBe`
+        Just (fromIntegral (abs v))
+
+      it "decimals" . property $ \v ->
+        parseMaybe posDecNumParser (printf "%f" (abs (v :: Double))) `shouldBe`
+        Just (abs v)
+
+    it "posNumParser" . property $ \v ->
+      parseMaybe posNumParser (show (abs (v :: Int))) `shouldBe` Just (abs v)
+
+    it "numParser" . property $ \v ->
+      parseMaybe numParser (show (v :: Int)) `shouldBe` Just v
+
   describe "boundedEnumShowParser" $ do
     context "lowercase" . exhaustive $ \v ->
       parseMaybe (boundedEnumShowParser <* eof) (show v) `shouldBe` Just (v :: SomeEnum)
@@ -154,8 +170,6 @@ spec = do
       runParser (occurrences someADTParser) "test" s `shouldBe` Right [v]
 
   describe "comma-separated" $ do
-    let numParser = read @Int <$> some digitChar
-
     context "valid" $ do
       it "single" . property $ \x -> do
         let y = abs x

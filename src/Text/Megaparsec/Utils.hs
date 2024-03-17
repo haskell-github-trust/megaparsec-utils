@@ -8,6 +8,7 @@ module Text.Megaparsec.Utils
   , occurrence
   , occurrences
   , parsecToReadsPrec
+  , posDecNumParser
   , posNumParser
   , uuidParser
   ) where
@@ -15,6 +16,7 @@ module Text.Megaparsec.Utils
 import           Control.Applicative             (many, some, (<|>))
 import           Control.Applicative.Combinators (choice)
 import           Control.Monad                   (replicateM, void)
+import           Control.Monad.Combinators       (optional)
 import           Data.Functor                    (($>))
 import           Data.List                       (intercalate, sortOn)
 import           Data.List.NonEmpty              (NonEmpty ((:|)))
@@ -57,6 +59,14 @@ occurrence p = go
 -- | Parse all occurrences of a given parser.
 occurrences :: Parsec Void String a -> Parsec Void String [a]
 occurrences = some . try . occurrence
+
+-- | Parse a positive number with decimals.
+posDecNumParser :: Parsec Void String Double
+posDecNumParser = do
+  num <- some digitChar
+  den <- maybe "" ("." <>) <$> optional (char '.' >> some digitChar)
+
+  return . read $ num <> den
 
 -- | Parse a positive integer.
 posNumParser :: Read a => Parsec Void String a
