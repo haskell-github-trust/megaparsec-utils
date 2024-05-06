@@ -13,9 +13,11 @@ description: Utilities for the Megaparsec library.
 
 dependencies:
   - base >= 4.7 && < 5
+  - aeson
   - extra
   - megaparsec
   - parser-combinators
+  - text
   - time
   - uuid
 

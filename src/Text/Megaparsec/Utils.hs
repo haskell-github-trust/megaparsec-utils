@@ -7,6 +7,7 @@ module Text.Megaparsec.Utils
   , numParser
   , occurrence
   , occurrences
+  , parsecToJSONParser
   , parsecToReadsPrec
   , posDecNumParser
   , posNumParser
@@ -17,14 +18,17 @@ import           Control.Applicative             (many, some, (<|>))
 import           Control.Applicative.Combinators (choice)
 import           Control.Monad                   (replicateM, void)
 import           Control.Monad.Combinators       (optional)
+import           Data.Aeson.Types                (Parser, Value, withText)
 import           Data.Functor                    (($>))
 import           Data.List                       (intercalate, sortOn)
 import           Data.List.NonEmpty              (NonEmpty ((:|)))
 import           Data.Maybe                      (fromJust)
+import qualified Data.Text                       as T (unpack)
 import           Data.UUID                       (UUID)
 import qualified Data.UUID                       as U (fromString)
 import           Data.Void                       (Void)
-import           Text.Megaparsec                 (Parsec, anySingle, runParser,
+import           Text.Megaparsec                 (Parsec, anySingle,
+                                                  errorBundlePretty, runParser,
                                                   try)
 import           Text.Megaparsec.Char            (char, digitChar, hexDigitChar,
                                                   string')
@@ -75,6 +79,15 @@ posNumParser = read <$> some digitChar
 -- | Parse an integer, without any spaces between minus sign and digits.
 numParser :: Parsec Void String Int
 numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
+
+-- | Convert a 'Parsec' parser into a 'Parser' suited for 'FromJSON' instances.
+parsecToJSONParser
+  :: String
+  -> Parsec Void String a
+  -> Value
+  -> Parser a
+parsecToJSONParser n p =
+  withText n $ either (fail . errorBundlePretty) pure . runParser p n . T.unpack
 
 -- | Convert a 'Parsec' parser into a 'ReadS' parser. Useful for defining 'Read'
 -- instances with 'Megaparsec'.
