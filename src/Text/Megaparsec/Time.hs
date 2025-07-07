@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Text.Megaparsec.Time
-  ( dayParser
+  ( dateParser
+  , dayParser
   , durationParser
   , hoursParser
   , minutesParser
@@ -19,13 +20,20 @@ import           Data.Time                 (DayOfWeek (..), NominalDiffTime,
                                             secondsToNominalDiffTime)
 import           Data.Void                 (Void)
 import           Text.Megaparsec           (Parsec, try)
-import           Text.Megaparsec.Char      (char, digitChar, space, string')
+import           Text.Megaparsec.Char      (char, digitChar, space, space1,
+                                            string')
 import           Text.Megaparsec.Utils     (posNumParser)
 
-dayParser :: Parsec Void String (Either Int DayOfWeek)
+type DayResult = Either Int DayOfWeek
+
+dateParser :: Parsec Void String (Maybe DayResult, TimeOfDay)
+dateParser = (,) <$> optional (try (dayParser <* space1)) <*> timeParser
+
+dayParser :: Parsec Void String DayResult
 dayParser = choice
   [ Right <$> shortDay
   , Right <$> longDay
+  , Left <$> (try (string' "yesterday") $> -1)
   , Left <$> (try (string' "tomorrow") $> 1)
   , Right <$> absoluteDay
   , Left <$> relativeDay

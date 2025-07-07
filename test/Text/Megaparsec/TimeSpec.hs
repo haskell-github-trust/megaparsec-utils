@@ -17,8 +17,9 @@ import           Test.Hspec           (Spec, context, describe, it, shouldBe,
 import           Test.QuickCheck      (Arbitrary (..), Gen, elements, forAll,
                                        property, suchThat)
 import           Text.Megaparsec      (Parsec, errorBundlePretty, runParser)
-import           Text.Megaparsec.Time (dayParser, durationParser, hoursParser,
-                                       minutesParser, secondsParser, timeParser)
+import           Text.Megaparsec.Time (dateParser, dayParser, durationParser,
+                                       hoursParser, minutesParser,
+                                       secondsParser, timeParser)
 import           Text.Printf          (printf)
 
 instance Arbitrary TimeOfDay where
@@ -45,6 +46,15 @@ parseOrPrettyError p = first errorBundlePretty . runParser p "test"
 
 spec :: Spec
 spec = do
+  describe "date" $ do
+    it "time only" $
+      parseOrPrettyError dateParser "11:03" `shouldBe`
+      Right (Nothing, TimeOfDay 11 3 0)
+
+    it "with day" $
+      parseOrPrettyError dateParser "yesterday 11:03" `shouldBe`
+      Right (Just (Left (-1)), TimeOfDay 11 3 0)
+
   describe "day" $ do
     let weekday d = d < Saturday
 
@@ -67,10 +77,10 @@ spec = do
 
     context "tomorrow" $ do
       it "capitalized" $
-        parseOrPrettyError dayParser "Tomorrow "`shouldBe` Right (Left 1)
+        parseOrPrettyError dayParser "Tomorrow" `shouldBe` Right (Left 1)
 
       it "lowercase" $
-        parseOrPrettyError dayParser "tomorrow "`shouldBe` Right (Left 1)
+        parseOrPrettyError dayParser "tomorrow" `shouldBe` Right (Left 1)
 
     it "future day" . forAll (abs <$> arbitrary) $ \x ->
       parseOrPrettyError dayParser (printf "+%d" x) `shouldBe` Right (Left x)
