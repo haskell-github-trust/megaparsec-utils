@@ -26,16 +26,17 @@ import           Data.Maybe                      (fromJust)
 import qualified Data.Text                       as T (unpack)
 import           Data.UUID                       (UUID)
 import qualified Data.UUID                       as U (fromString)
-import           Data.Void                       (Void)
-import           Text.Megaparsec                 (Parsec, anySingle,
-                                                  errorBundlePretty, runParser,
-                                                  try)
+import           Text.Megaparsec                 (Parsec, ShowErrorComponent,
+                                                  anySingle, errorBundlePretty,
+                                                  runParser, try)
 import           Text.Megaparsec.Char            (char, digitChar, hexDigitChar,
                                                   string')
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers
 -- and English yes-no.
-boolParser :: Parsec Void String Bool
+boolParser
+  :: Ord e
+  => Parsec e String Bool
 boolParser = true <|> false
   where true  = True  <$ choice (map string' ["true", "y", "yes", "1"])
         false = False <$ choice (map string' ["false", "n", "no", "0"])
@@ -43,29 +44,41 @@ boolParser = true <|> false
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
 boundedEnumShowParser
-  :: Bounded a
+  :: Ord e
+  => Bounded a
   => Enum a
   => Show a
-  => Parsec Void String a
+  => Parsec e String a
 boundedEnumShowParser =
   choice . map parseShow $ sortOn (negate . length . show) [minBound ..]
   where parseShow a = string' (show a) $> a
 
 -- | Parse a comma-separated list of items.
-commaSeparated :: Parsec Void String a -> Parsec Void String (NonEmpty a)
+commaSeparated
+  :: Ord e
+  => Parsec e String a
+  -> Parsec e String (NonEmpty a)
 commaSeparated p = (:|) <$> p <*> many (char ',' >> p)
 
 -- | Parse any occurrence of a given parser. Consumes any input before occurence.
-occurrence :: Parsec Void String a -> Parsec Void String a
+occurrence
+  :: Ord e
+  => Parsec e String a
+  -> Parsec e String a
 occurrence p = go
   where go = p <|> (anySingle >> go)
 
 -- | Parse all occurrences of a given parser.
-occurrences :: Parsec Void String a -> Parsec Void String [a]
+occurrences
+  :: Ord e
+  => Parsec e String a
+  -> Parsec e String [a]
 occurrences = some . try . occurrence . try
 
 -- | Parse a positive number with decimals.
-posDecNumParser :: Parsec Void String Double
+posDecNumParser
+  :: Ord e
+  => Parsec e String Double
 posDecNumParser = do
   num <- some digitChar
   den <- maybe "" ("." <>) <$> optional (char '.' >> some digitChar)
@@ -73,19 +86,25 @@ posDecNumParser = do
   return . read $ num <> den
 
 -- | Parse a positive integer.
-posNumParser :: Read a => Parsec Void String a
+posNumParser
+  :: Ord e
+  => Read a
+  => Parsec e String a
 posNumParser = read <$> some digitChar
 
 -- | Parse an integer, without any spaces between minus sign and digits.
-numParser :: Parsec Void String Int
+numParser
+  :: Ord e
+  => Parsec e String Int
 numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
 
 -- | Convert a 'Parsec' parser into a 'Parser' suited for 'FromJSON' instances.
 parsecToJSONParser
+  :: ShowErrorComponent e
   -- ^ Parser name.
-  :: String
+  => String
   -- ^ Parser.
-  -> Parsec Void String a
+  -> Parsec e String a
   -- ^ Input value.
   -> Value
   -> Parser a
@@ -94,11 +113,15 @@ parsecToJSONParser n p =
 
 -- | Convert a 'Parsec' parser into a 'ReadS' parser. Useful for defining 'Read'
 -- instances with 'Megaparsec'.
-parsecToReadsPrec :: Parsec Void String a -> ReadS a
+parsecToReadsPrec
+  :: Parsec e String a
+  -> ReadS a
 parsecToReadsPrec p = either (const []) (\x -> [(x, "")]) . runParser p "string"
 
 -- | Parse a RFC4122-compliant UUID.
-uuidParser :: Parsec Void String UUID
+uuidParser
+  :: Ord e
+  => Parsec e String UUID
 uuidParser = do
   part1 <- replicateM 8 hexDigitChar
   void $ char '-'

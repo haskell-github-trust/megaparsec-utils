@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Text.Megaparsec.UtilsSpec
@@ -111,44 +112,46 @@ parseOrPrettyError p = first errorBundlePretty . runParser p "test"
 
 spec :: Spec
 spec = do
+  let parseMaybe' = parseMaybe @Void
+
   describe "parsers" $ do
     it "SomeData" . property $ \v ->
-      parseMaybe someDataParser (show (v :: SomeData)) `shouldBe` Just v
+      parseMaybe' someDataParser (show (v :: SomeData)) `shouldBe` Just v
 
     it "SomeEnum" . property $ \v ->
-      parseMaybe someEnumParser (show (v :: SomeEnum)) `shouldBe` Just v
+      parseMaybe' someEnumParser (show (v :: SomeEnum)) `shouldBe` Just v
 
     it "SomeADT" . property $ \v ->
-      parseMaybe someADTParser (show (v :: SomeADT)) `shouldBe` Just v
+      parseMaybe' someADTParser (show (v :: SomeADT)) `shouldBe` Just v
 
     context "posDecNumParser" $ do
       it "no decimals" . property $ \v ->
-        parseMaybe posDecNumParser (show (abs (v :: Int))) `shouldBe`
+        parseMaybe' posDecNumParser (show (abs (v :: Int))) `shouldBe`
         Just (fromIntegral (abs v))
 
       it "decimals" . property $ \v ->
-        parseMaybe posDecNumParser (printf "%f" (abs (v :: Double))) `shouldBe`
+        parseMaybe' posDecNumParser (printf "%f" (abs (v :: Double))) `shouldBe`
         Just (abs v)
 
     it "posNumParser" . property $ \v ->
-      parseMaybe posNumParser (show (abs (v :: Int))) `shouldBe` Just (abs v)
+      parseMaybe' posNumParser (show (abs (v :: Int))) `shouldBe` Just (abs v)
 
     it "numParser" . property $ \v ->
-      parseMaybe numParser (show (v :: Int)) `shouldBe` Just v
+      parseMaybe' numParser (show (v :: Int)) `shouldBe` Just v
 
   describe "boundedEnumShowParser" $ do
     context "lowercase" . exhaustive $ \v ->
-      parseMaybe (boundedEnumShowParser <* eof) (show v) `shouldBe` Just (v :: SomeEnum)
+      parseMaybe' (boundedEnumShowParser <* eof) (show v) `shouldBe` Just (v :: SomeEnum)
 
     context "uppercase" . exhaustive $ \v ->
-      parseMaybe (boundedEnumShowParser <* eof) (map toUpper (show v))
+      parseMaybe' (boundedEnumShowParser <* eof) (map toUpper (show v))
       `shouldBe` Just (v :: SomeEnum)
 
     context "mixed" . exhaustive $ \v -> do
       let capitalize i x | even i    = toUpper x
                          | otherwise = x
           mixCase = zipWith capitalize [(0 :: Int) ..]
-      parseMaybe (boundedEnumShowParser <* eof) (mixCase (show v))
+      parseMaybe' (boundedEnumShowParser <* eof) (mixCase (show v))
         `shouldBe` Just (v :: SomeEnum)
 
   describe "occurrence" $ do

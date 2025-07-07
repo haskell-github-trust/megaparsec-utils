@@ -21,7 +21,6 @@ import           Data.Time                 (Day, DayOfWeek (..),
                                             NominalDiffTime, TimeOfDay (..),
                                             defaultTimeLocale, parseTimeM,
                                             secondsToNominalDiffTime)
-import           Data.Void                 (Void)
 import           Text.Megaparsec           (Parsec, takeRest, try)
 import           Text.Megaparsec.Char      (char, digitChar, space, space1,
                                             string')
@@ -29,10 +28,14 @@ import           Text.Megaparsec.Utils     (posNumParser)
 
 type DayResult = Either Int DayOfWeek
 
-dateParser :: Parsec Void String (Maybe DayResult, TimeOfDay)
+dateParser
+  :: Ord e
+  => Parsec e String (Maybe DayResult, TimeOfDay)
 dateParser = (,) <$> optional (try (dayParser <* space1)) <*> timeParser
 
-dayParser :: Parsec Void String DayResult
+dayParser
+  :: Ord e
+  => Parsec e String DayResult
 dayParser = choice
   [ Right <$> longDay
   , Right <$> shortDay
@@ -48,7 +51,9 @@ dayParser = choice
           absoluteDay = toEnum . read <$> some digitChar
           relativeDay = ($) <$> sign <*> (read <$> some digitChar)
 
-durationParser :: Parsec Void String NominalDiffTime
+durationParser
+  :: Ord e
+  => Parsec e String NominalDiffTime
 durationParser = try hours <|> try minutes <|> secondsParser
   where hours = do
           h <- hoursParser <* space
@@ -63,22 +68,32 @@ durationParser = try hours <|> try minutes <|> secondsParser
 
           return $ m + s
 
-gregorianDayParser :: Parsec Void String Day
+gregorianDayParser
+  :: Ord e
+  => Parsec e String Day
 gregorianDayParser = do
   s <- takeRest
   parseTimeM False defaultTimeLocale "%F" s <|>
     parseTimeM False defaultTimeLocale "%d/%m/%Y" s
 
-hoursParser :: Parsec Void String NominalDiffTime
+hoursParser
+  :: Ord e
+  => Parsec e String NominalDiffTime
 hoursParser = secondsToNominalDiffTime . (* 3600) <$> posNumParser <* char 'h'
 
-minutesParser :: Parsec Void String NominalDiffTime
+minutesParser
+  :: Ord e
+  => Parsec e String NominalDiffTime
 minutesParser = secondsToNominalDiffTime . (* 60) <$> posNumParser <* char 'm'
 
-secondsParser :: Parsec Void String NominalDiffTime
+secondsParser
+  :: Ord e
+  => Parsec e String NominalDiffTime
 secondsParser = secondsToNominalDiffTime <$> posNumParser <* optional (char 's')
 
-timeParser :: Parsec Void String TimeOfDay
+timeParser
+  :: Ord e
+  => Parsec e String TimeOfDay
 timeParser = do
   h <- read <$> replicateM 2 digitChar
   void $ char ':'
