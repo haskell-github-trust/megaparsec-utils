@@ -47,6 +47,7 @@ library:
 
 tests:
   megaparsec-utils-test:
+    defaults: sol/hpack-defaults@hspec-cabal-new
     main: Spec.hs
     source-dirs: test
     ghc-options:
