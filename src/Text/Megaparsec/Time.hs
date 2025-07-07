@@ -103,7 +103,7 @@ durationParser = try hours <|> try minutes <|> secondsParser
 
     return (m + s)
 
--- | Parse a Gregorian 'Day' from a @%d\/%m\/%Y@ format.
+-- | Parse a Gregorian 'Day' from a @%F@ or @%d\/%m\/%Y@ format.
 gregorianDayParser
   :: Ord e
   => Parsec e String Day
