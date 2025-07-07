@@ -82,8 +82,11 @@ numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
 
 -- | Convert a 'Parsec' parser into a 'Parser' suited for 'FromJSON' instances.
 parsecToJSONParser
+  -- ^ Parser name.
   :: String
+  -- ^ Parser.
   -> Parsec Void String a
+  -- ^ Input value.
   -> Value
   -> Parser a
 parsecToJSONParser n p =
