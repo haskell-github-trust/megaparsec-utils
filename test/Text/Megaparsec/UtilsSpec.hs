@@ -161,9 +161,14 @@ spec = do
       let s = unwords [prefix, show (v :: SomeData), suffix]
       runParser (occurrences someDataParser) "test" s `shouldBe` Right [v]
 
-    it "SomeEnum" . forAll input $ \(prefix, v, suffix) -> do
-      let s = unwords [prefix, show (v :: SomeEnum), suffix]
-      runParser (occurrences someEnumParser) "test" s `shouldBe` Right [v]
+    context "SomeEnum" $ do
+      it "words" . forAll input $ \(prefix, v, suffix) -> do
+        let s = unwords [prefix, show (v :: SomeEnum), suffix]
+        runParser (occurrences someEnumParser) "test" s `shouldBe` Right [v]
+
+      it "with partial" $
+        runParser (occurrences someEnumParser) "test" "a [Some] SomeA yo" `shouldBe`
+        Right [SomeA]
 
     it "SomeADT" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeADT), suffix]
