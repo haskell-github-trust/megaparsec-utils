@@ -14,6 +14,7 @@ import           Control.Applicative       (optional, (<|>))
 import           Control.Monad             (replicateM, void)
 import           Control.Monad.Combinators (choice, some)
 import           Data.Functor              (($>))
+import           Data.List.Extra           (lower)
 import           Data.Maybe                (fromMaybe)
 import           Data.Time                 (DayOfWeek (..), NominalDiffTime,
                                             TimeOfDay (..),
@@ -31,19 +32,19 @@ dateParser = (,) <$> optional (try (dayParser <* space1)) <*> timeParser
 
 dayParser :: Parsec Void String DayResult
 dayParser = choice
-  [ Right <$> shortDay
-  , Right <$> longDay
-  , Left <$> (try (string' "yesterday") $> -1)
-  , Left <$> (try (string' "tomorrow") $> 1)
+  [ Right <$> longDay
+  , Right <$> shortDay
+  , Left  <$> (string' "yesterday" $> -1)
+  , Left  <$> (string' "tomorrow" $> 1)
   , Right <$> absoluteDay
-  , Left <$> relativeDay
-  ]
-  where shortDay = choice $ map (ciString (take 3 . show)) weekDays
-        longDay = choice $ map (ciString show) weekDays
-        ciString f d = try (string' (f d)) $> d
-        weekDays = [Monday .. Friday]
-        absoluteDay = toEnum . read <$> try (some digitChar)
-        relativeDay = char '+' >> read <$> try (some digitChar)
+  , Left  <$> relativeDay
+  ] where shortDay = choice $ map (ciString (lower . take 3 . show)) weekDays
+          longDay  = choice $ map (ciString (lower . show)) weekDays
+          ciString f d = try (string' (f d)) $> d
+          weekDays = [Monday .. Friday]
+          sign = (char '-' $> negate) <|> (char '+' $> id)
+          absoluteDay = toEnum . read <$> some digitChar
+          relativeDay = ($) <$> sign <*> (read <$> some digitChar)
 
 durationParser :: Parsec Void String NominalDiffTime
 durationParser = try hours <|> try minutes <|> secondsParser

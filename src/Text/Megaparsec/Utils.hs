@@ -62,7 +62,7 @@ occurrence p = go
 
 -- | Parse all occurrences of a given parser.
 occurrences :: Parsec Void String a -> Parsec Void String [a]
-occurrences = some . try . occurrence
+occurrences = some . try . occurrence . try
 
 -- | Parse a positive number with decimals.
 posDecNumParser :: Parsec Void String Double

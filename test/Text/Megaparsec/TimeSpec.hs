@@ -51,7 +51,25 @@ spec = do
       parseOrPrettyError dateParser "11:03" `shouldBe`
       Right (Nothing, TimeOfDay 11 3 0)
 
-    it "with day" $
+    context "with day" $ do
+      it "short" $
+        parseOrPrettyError dateParser "tue 11:03" `shouldBe`
+        Right (Just (Right Tuesday), TimeOfDay 11 3 0)
+
+      it "long" $
+        parseOrPrettyError dateParser "tuesday 11:03" `shouldBe`
+        Right (Just (Right Tuesday), TimeOfDay 11 3 0)
+
+    context "with rel day" $ do
+      it "positive" $
+        parseOrPrettyError dateParser "+1 11:03" `shouldBe`
+        Right (Just (Left 1), TimeOfDay 11 3 0)
+
+      it "negative" $
+        parseOrPrettyError dateParser "-1 11:03" `shouldBe`
+        Right (Just (Left (-1)), TimeOfDay 11 3 0)
+
+    it "with yesterday" $
       parseOrPrettyError dateParser "yesterday 11:03" `shouldBe`
       Right (Just (Left (-1)), TimeOfDay 11 3 0)
 

@@ -7,6 +7,7 @@ module Text.Megaparsec.UtilsSpec
 import           Control.Applicative             (some)
 import           Control.Applicative.Combinators (choice)
 import           Control.Monad                   (void)
+import           Data.Bifunctor                  (first)
 import           Data.Char                       (isAlphaNum, toUpper)
 import           Data.Either                     (isLeft)
 import           Data.List                       (intercalate)
@@ -19,7 +20,8 @@ import           Test.Hspec                      (Expectation, Spec, SpecWith,
 import           Test.QuickCheck                 (Arbitrary (..), Gen, elements,
                                                   forAll, listOf, listOf1,
                                                   property, suchThat)
-import           Text.Megaparsec                 (Parsec, eof, parseMaybe,
+import           Text.Megaparsec                 (Parsec, eof,
+                                                  errorBundlePretty, parseMaybe,
                                                   runParser)
 import           Text.Megaparsec.Char            (alphaNumChar, char, digitChar,
                                                   string)
@@ -101,6 +103,12 @@ exhaustive f = foldl1 (>>) $ mkIt <$> values
 instance Arbitrary a => Arbitrary (NonEmpty a) where
   arbitrary = (:|) <$> arbitrary <*> arbitrary
 
+parseOrPrettyError
+  :: Parsec Void String a
+  -> String
+  -> Either String a
+parseOrPrettyError p = first errorBundlePretty . runParser p "test"
+
 spec :: Spec
 spec = do
   describe "parsers" $ do
@@ -146,57 +154,57 @@ spec = do
   describe "occurrence" $ do
     it "SomeData" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeData), suffix]
-      runParser (occurrence someDataParser) "test" s `shouldBe` Right v
+      parseOrPrettyError (occurrence someDataParser) s `shouldBe` Right v
 
     it "SomeEnum" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeEnum), suffix]
-      runParser (occurrence someEnumParser) "test" s `shouldBe` Right v
+      parseOrPrettyError (occurrence someEnumParser) s `shouldBe` Right v
 
     it "SomeADT" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeADT), suffix]
-      runParser (occurrence someADTParser) "test" s `shouldBe` Right v
+      parseOrPrettyError (occurrence someADTParser) s `shouldBe` Right v
 
   describe "occurrences" $ do
     it "SomeData" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeData), suffix]
-      runParser (occurrences someDataParser) "test" s `shouldBe` Right [v]
+      parseOrPrettyError (occurrences someDataParser) s `shouldBe` Right [v]
 
     context "SomeEnum" $ do
       it "words" . forAll input $ \(prefix, v, suffix) -> do
         let s = unwords [prefix, show (v :: SomeEnum), suffix]
-        runParser (occurrences someEnumParser) "test" s `shouldBe` Right [v]
+        parseOrPrettyError (occurrences someEnumParser) s `shouldBe` Right [v]
 
       it "with partial" $
-        runParser (occurrences someEnumParser) "test" "a [Some] SomeA yo" `shouldBe`
+        parseOrPrettyError (occurrences someEnumParser) "a [Some] SomeA yo" `shouldBe`
         Right [SomeA]
 
     it "SomeADT" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeADT), suffix]
-      runParser (occurrences someADTParser) "test" s `shouldBe` Right [v]
+      parseOrPrettyError (occurrences someADTParser) s `shouldBe` Right [v]
 
   describe "comma-separated" $ do
     context "valid" $ do
       it "single" . property $ \x -> do
         let y = abs x
-        runParser (commaSeparated numParser) "test" (show y)
+        parseOrPrettyError (commaSeparated numParser) (show y)
           `shouldBe` Right (y :| [])
 
       it "multiple" . property $ \xs -> do
         let ys = fmap abs xs
             s = intercalate "," . map show $ N.toList ys
-        runParser (commaSeparated numParser) "test" s
+        parseOrPrettyError (commaSeparated numParser) s
           `shouldBe` Right ys
 
     context "invalid" $ do
       it "empty" $
-        runParser (commaSeparated numParser) "test" "" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated numParser) "" `shouldSatisfy` isLeft
 
       it "first" $
-        runParser (commaSeparated numParser) "test" "abc,42" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated numParser) "test" `shouldSatisfy` isLeft
 
       it "first partially correct" $
-        runParser (commaSeparated (numParser <* eof)) "test" "42abc,42"
+        parseOrPrettyError (commaSeparated (numParser <* eof)) "test"
         `shouldSatisfy` isLeft
 
       it "second" $
-        runParser (commaSeparated numParser) "test" "42,abc" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated numParser) "test" `shouldSatisfy` isLeft
