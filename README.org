@@ -1,2 +1,0 @@
-* megaparsec-utils
-Utilities to use on top of the [[https://hackage.haskell.org/package/megaparsec][Megaparsec]] library.

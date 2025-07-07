@@ -6,8 +6,8 @@ maintainer: drlkf@drlkf.net
 copyright:  2024 drlkf
 
 extra-source-files:
-- README.org
-- CHANGELOG.md
+  - README.md
+  - CHANGELOG.md
 
 description: Utilities for the Megaparsec library.
 
