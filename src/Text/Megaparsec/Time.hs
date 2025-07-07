@@ -1,43 +1,50 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-{- |
-Module      : Text.Megaparsec.Time
-Description : Various parsers for types related to time.
-Copyright   : (c) drlkf, 2024
-License     : GPL-3
-Maintainer  : drlkf@drlkf.net
-Stability   : experimental
--}
+-- |
+-- Module      : Text.Megaparsec.Time
+-- Description : Various parsers for types related to time.
+-- Copyright   : (c) drlkf, 2024
+-- License     : GPL-3
+-- Maintainer  : drlkf@drlkf.net
+-- Stability   : experimental
+module Text.Megaparsec.Time (
+  DayResult,
+  dateParser,
+  dayParser,
+  durationParser,
+  gregorianDayParser,
+  hoursParser,
+  minutesParser,
+  secondsParser,
+  timeParser,
+) where
 
-module Text.Megaparsec.Time
-  ( DayResult
-
-  , dateParser
-  , dayParser
-  , durationParser
-  , gregorianDayParser
-  , hoursParser
-  , minutesParser
-  , secondsParser
-  , timeParser
-  ) where
-
-import           Control.Applicative       (optional, (<|>))
-import           Control.Monad             (replicateM)
-import           Control.Monad.Combinators (choice, some)
-import           Data.Char                 (toLower)
-import           Data.Functor              (($>))
-import           Data.Maybe                (fromMaybe)
-import           Data.Time                 (Day, DayOfWeek (..),
-                                            NominalDiffTime, TimeOfDay (..),
-                                            defaultTimeLocale,
-                                            makeTimeOfDayValid, parseTimeM,
-                                            secondsToNominalDiffTime)
-import           Text.Megaparsec           (Parsec, takeRest, try)
-import           Text.Megaparsec.Char      (char, digitChar, space, space1,
-                                            string')
-import           Text.Megaparsec.Utils     (posNumParser)
-import           Text.Printf               (printf)
+import Control.Applicative (optional, (<|>))
+import Control.Monad (replicateM)
+import Control.Monad.Combinators (choice, some)
+import Data.Char (toLower)
+import Data.Functor (($>))
+import Data.Maybe (fromMaybe)
+import Data.Time (
+  Day,
+  DayOfWeek (..),
+  NominalDiffTime,
+  TimeOfDay (..),
+  defaultTimeLocale,
+  makeTimeOfDayValid,
+  parseTimeM,
+  secondsToNominalDiffTime,
+ )
+import Text.Megaparsec (Parsec, takeRest, try)
+import Text.Megaparsec.Char (
+  char,
+  digitChar,
+  space,
+  space1,
+  string',
+ )
+import Text.Megaparsec.Utils (posNumParser)
+import Text.Printf (printf)
 
 -- | Representation of a parser result with either a number of days relative to
 -- the current day, or a 'DayOfWeek'.
@@ -58,20 +65,23 @@ dateParser = (,) <$> optional (try (dayParser <* space1)) <*> timeParser
 dayParser
   :: Ord e
   => Parsec e String DayResult
-dayParser = choice
-  [ Right <$> longDay
-  , Right <$> shortDay
-  , Left  <$> (string' "yesterday" $> -1)
-  , Left  <$> (string' "tomorrow" $> 1)
-  , Right <$> absoluteDay
-  , Left  <$> relativeDay
-  ] where shortDay = choice $ map (ciString (fmap toLower . take 3 . show)) weekDays
-          longDay  = choice $ map (ciString (fmap toLower . show)) weekDays
-          ciString f d = try (string' (f d)) $> d
-          weekDays = [Monday .. Friday]
-          sign = (char '-' $> negate) <|> (char '+' $> id)
-          absoluteDay = toEnum . read <$> some digitChar
-          relativeDay = ($) <$> sign <*> (read <$> some digitChar)
+dayParser =
+  choice
+    [ Right <$> longDay
+    , Right <$> shortDay
+    , Left <$> (string' "yesterday" $> -1)
+    , Left <$> (string' "tomorrow" $> 1)
+    , Right <$> absoluteDay
+    , Left <$> relativeDay
+    ]
+ where
+  shortDay = choice $ map (ciString (fmap toLower . take 3 . show)) weekDays
+  longDay = choice $ map (ciString (fmap toLower . show)) weekDays
+  ciString f d = try (string' (f d)) $> d
+  weekDays = [Monday .. Friday]
+  sign = (char '-' $> negate) <|> (char '+' $> id)
+  absoluteDay = toEnum . read <$> some digitChar
+  relativeDay = ($) <$> sign <*> (read <$> some digitChar)
 
 -- | Parse a 'NominalDiffTime' using strings like @1h23m45s@, with all
 -- components being optional as long as one is present.
@@ -79,18 +89,19 @@ durationParser
   :: Ord e
   => Parsec e String NominalDiffTime
 durationParser = try hours <|> try minutes <|> secondsParser
-  where hours = do
-          h <- hoursParser <* space
-          m <- fromMaybe zero <$> optional (try minutes)
-          s <- fromMaybe zero <$> optional secondsParser
+ where
+  hours = do
+    h <- hoursParser <* space
+    m <- fromMaybe zero <$> optional (try minutes)
+    s <- fromMaybe zero <$> optional secondsParser
 
-          return (h + m + s)
+    return (h + m + s)
 
-        minutes = do
-          m <- minutesParser <* space
-          s <- fromMaybe zero <$> optional secondsParser
+  minutes = do
+    m <- minutesParser <* space
+    s <- fromMaybe zero <$> optional secondsParser
 
-          return (m + s)
+    return (m + s)
 
 -- | Parse a Gregorian 'Day' from a @%d\/%m\/%Y@ format.
 gregorianDayParser
@@ -98,8 +109,10 @@ gregorianDayParser
   => Parsec e String Day
 gregorianDayParser = do
   s <- takeRest
-  parseTimeM False defaultTimeLocale "%F" s <|>
-    parseTimeM False defaultTimeLocale "%d/%m/%Y" s
+
+  let parseTime = flip (parseTimeM False defaultTimeLocale) s
+
+  parseTime "%F" <|> parseTime "%d/%m/%Y"
 
 -- | Parse a 'NominalDiffTime' from a number of hours from a string like @1h@.
 hoursParser

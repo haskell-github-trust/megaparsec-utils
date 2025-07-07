@@ -1,0 +1,16 @@
+---
+column-limit: 90
+comma-style: leading
+function-arrows: leading
+haddock-style: single-line
+haddock-style-module: single-line
+import-export-style: diff-friendly
+indentation: 2
+let-style: inline
+respectful: false
+single-constraint-parens: never
+single-deriving-parens: never
+sort-constraints: true
+sort-derived-classes: true
+sort-deriving-clauses: true
+...

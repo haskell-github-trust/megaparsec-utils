@@ -1,36 +1,63 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Text.Megaparsec.UtilsSpec
-  ( spec
-  ) where
+module Text.Megaparsec.UtilsSpec (
+  spec,
+) where
 
-import           Control.Applicative             (some)
-import           Control.Applicative.Combinators (choice)
-import           Control.Monad                   (void)
-import           Data.Bifunctor                  (first)
-import           Data.Char                       (isAlphaNum, toUpper)
-import           Data.Either                     (isLeft)
-import           Data.List                       (intercalate)
-import           Data.List.NonEmpty              (NonEmpty ((:|)))
-import qualified Data.List.NonEmpty              as N (toList)
-import           Data.Void                       (Void)
-import           Test.Hspec                      (Expectation, Spec, SpecWith,
-                                                  context, describe, it,
-                                                  shouldBe, shouldSatisfy)
-import           Test.QuickCheck                 (Arbitrary (..), Gen, elements,
-                                                  forAll, listOf, listOf1,
-                                                  property, suchThat)
-import           Text.Megaparsec                 (Parsec, eof,
-                                                  errorBundlePretty, parseMaybe,
-                                                  runParser)
-import           Text.Megaparsec.Char            (alphaNumChar, char, digitChar,
-                                                  string)
-import           Text.Megaparsec.Utils           (boundedEnumShowParser,
-                                                  commaSeparated, numParser,
-                                                  occurrence, occurrences,
-                                                  posDecNumParser, posNumParser)
-import           Text.Printf                     (printf)
+import Control.Applicative (some)
+import Control.Applicative.Combinators (choice)
+import Control.Monad (void)
+import Data.Bifunctor (first)
+import Data.Char (isAlphaNum, toUpper)
+import Data.Either (isLeft)
+import Data.List (intercalate)
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as N (toList)
+import Data.Void (Void)
+import Test.Hspec (
+  Expectation,
+  Spec,
+  SpecWith,
+  context,
+  describe,
+  it,
+  shouldBe,
+  shouldSatisfy,
+ )
+import Test.QuickCheck (
+  Arbitrary (..),
+  Gen,
+  elements,
+  forAll,
+  listOf,
+  listOf1,
+  property,
+  suchThat,
+ )
+import Text.Megaparsec (
+  Parsec,
+  eof,
+  errorBundlePretty,
+  parseMaybe,
+  runParser,
+ )
+import Text.Megaparsec.Char (
+  alphaNumChar,
+  char,
+  digitChar,
+  string,
+ )
+import Text.Megaparsec.Utils (
+  boundedEnumShowParser,
+  commaSeparated,
+  numParser,
+  occurrence,
+  occurrences,
+  posDecNumParser,
+  posNumParser,
+ )
+import Text.Printf (printf)
 
 newtype SomeData = SomeData Int
   deriving Eq
@@ -60,19 +87,21 @@ someEnumParser :: Parsec Void String SomeEnum
 someEnumParser = choice $ map showableParser [(minBound :: SomeEnum) ..]
 
 data SomeADT = SomeADT
-  { _id   :: Int
+  { _id :: Int
   , _name :: String
   , _type :: SomeEnum
-  } deriving Eq
+  }
+  deriving Eq
 
 instance Show SomeADT where
   show (SomeADT i n t) = intercalate "," [show i, n, show t]
 
 instance Arbitrary SomeADT where
-  arbitrary = SomeADT . abs
-    <$> arbitrary
-    <*> listOf1 (arbitrary `suchThat` isAlphaNum)
-    <*> arbitrary
+  arbitrary =
+    SomeADT . abs
+      <$> arbitrary
+      <*> listOf1 (arbitrary `suchThat` isAlphaNum)
+      <*> arbitrary
 
 someADTParser :: Parsec Void String SomeADT
 someADTParser = do
@@ -83,11 +112,13 @@ someADTParser = do
   SomeADT i n <$> someEnumParser
 
 input :: Arbitrary a => Gen (String, a, String)
-input = (,,)
-  <$> listOf (arbitrary `suchThat` flip notElem forbiddenChars)
-  <*> arbitrary
-  <*> listOf (arbitrary `suchThat` flip notElem forbiddenChars)
-  where forbiddenChars = ['0'..'9'] ++ concatMap show [(minBound :: SomeEnum) ..]
+input =
+  (,,)
+    <$> listOf (arbitrary `suchThat` flip notElem forbiddenChars)
+    <*> arbitrary
+    <*> listOf (arbitrary `suchThat` flip notElem forbiddenChars)
+ where
+  forbiddenChars = ['0' .. '9'] ++ concatMap show [(minBound :: SomeEnum) ..]
 
 exhaustive
   :: Show a
@@ -96,10 +127,11 @@ exhaustive
   => (a -> Expectation)
   -> SpecWith ()
 exhaustive f = foldl1 (>>) $ mkIt <$> values
-  where mkIt v = it (pad (show v)) $ f v
-        padNum = foldr (max . length . show) 0 values
-        pad s = s ++ replicate (padNum - length s) ' '
-        values = [minBound..]
+ where
+  mkIt v = it (pad (show v)) $ f v
+  padNum = foldr (max . length . show) 0 values
+  pad s = s ++ replicate (padNum - length s) ' '
+  values = [minBound ..]
 
 instance Arbitrary a => Arbitrary (NonEmpty a) where
   arbitrary = (:|) <$> arbitrary <*> arbitrary
@@ -126,12 +158,12 @@ spec = do
 
     context "posDecNumParser" $ do
       it "no decimals" . property $ \v ->
-        parseMaybe' posDecNumParser (show (abs (v :: Int))) `shouldBe`
-        Just (fromIntegral (abs v))
+        parseMaybe' posDecNumParser (show (abs (v :: Int)))
+          `shouldBe` Just (fromIntegral (abs v))
 
       it "decimals" . property $ \v ->
-        parseMaybe' posDecNumParser (printf "%f" (abs (v :: Double))) `shouldBe`
-        Just (abs v)
+        parseMaybe' posDecNumParser (printf "%f" (abs (v :: Double)))
+          `shouldBe` Just (abs v)
 
     it "posNumParser" . property $ \v ->
       parseMaybe' posNumParser (show (abs (v :: Int))) `shouldBe` Just (abs v)
@@ -145,11 +177,13 @@ spec = do
 
     context "uppercase" . exhaustive $ \v ->
       parseMaybe' (boundedEnumShowParser <* eof) (map toUpper (show v))
-      `shouldBe` Just (v :: SomeEnum)
+        `shouldBe` Just (v :: SomeEnum)
 
     context "mixed" . exhaustive $ \v -> do
-      let capitalize i x | even i    = toUpper x
-                         | otherwise = x
+      let capitalize i x
+            | even i = toUpper x
+            | otherwise = x
+
           mixCase = zipWith capitalize [(0 :: Int) ..]
       parseMaybe' (boundedEnumShowParser <* eof) (mixCase (show v))
         `shouldBe` Just (v :: SomeEnum)
@@ -178,8 +212,8 @@ spec = do
         parseOrPrettyError (occurrences someEnumParser) s `shouldBe` Right [v]
 
       it "with partial" $
-        parseOrPrettyError (occurrences someEnumParser) "a [Some] SomeA yo" `shouldBe`
-        Right [SomeA]
+        parseOrPrettyError (occurrences someEnumParser) "a [Some] SomeA yo"
+          `shouldBe` Right [SomeA]
 
     it "SomeADT" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeADT), suffix]
@@ -207,7 +241,7 @@ spec = do
 
       it "first partially correct" $
         parseOrPrettyError (commaSeparated (numParser <* eof)) "test"
-        `shouldSatisfy` isLeft
+          `shouldSatisfy` isLeft
 
       it "second" $
         parseOrPrettyError (commaSeparated numParser) "test" `shouldSatisfy` isLeft

@@ -1,47 +1,54 @@
-{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeFamilies #-}
 
-{- |
-Module      : Text.Megaparsec.Utils
-Description : Various generic parsers and combinators.
-Copyright   : (c) drlkf, 2024
-License     : GPL-3
-Maintainer  : drlkf@drlkf.net
-Stability   : experimental
--}
+-- |
+-- Module      : Text.Megaparsec.Utils
+-- Description : Various generic parsers and combinators.
+-- Copyright   : (c) drlkf, 2024
+-- License     : GPL-3
+-- Maintainer  : drlkf@drlkf.net
+-- Stability   : experimental
+module Text.Megaparsec.Utils (
+  boolParser,
+  boundedEnumShowParser,
+  commaSeparated,
+  numParser,
+  occurrence,
+  occurrences,
+  parsecToJSONParser,
+  parsecToReadsPrec,
+  posDecNumParser,
+  posNumParser,
+  uuidParser,
+) where
 
-module Text.Megaparsec.Utils
-  ( boolParser
-  , boundedEnumShowParser
-  , commaSeparated
-  , numParser
-  , occurrence
-  , occurrences
-  , parsecToJSONParser
-  , parsecToReadsPrec
-  , posDecNumParser
-  , posNumParser
-  , uuidParser
-  ) where
-
-import           Control.Applicative             (many, some, (<|>))
-import           Control.Applicative.Combinators (choice)
-import           Control.Monad                   (replicateM)
-import           Control.Monad.Combinators       (optional)
-import           Data.Aeson.Types                (Parser, Value, withText)
-import           Data.Functor                    (($>))
-import           Data.List                       (intercalate, sortOn)
-import           Data.List.NonEmpty              (NonEmpty ((:|)))
-import           Data.Maybe                      (fromJust)
-import qualified Data.Text                       as T (unpack)
-import           Data.UUID                       (UUID)
-import qualified Data.UUID                       as U (fromString)
-import           Text.Megaparsec                 (Parsec, ShowErrorComponent,
-                                                  anySingle, errorBundlePretty,
-                                                  runParser, try)
-import           Text.Megaparsec.Char            (char, digitChar, hexDigitChar,
-                                                  string')
+import Control.Applicative (many, some, (<|>))
+import Control.Applicative.Combinators (choice)
+import Control.Monad (replicateM)
+import Control.Monad.Combinators (optional)
+import Data.Aeson.Types (Parser, Value, withText)
+import Data.Functor (($>))
+import Data.List (intercalate, sortOn)
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Maybe (fromJust)
+import qualified Data.Text as T (unpack)
+import Data.UUID (UUID)
+import qualified Data.UUID as U (fromString)
+import Text.Megaparsec (
+  Parsec,
+  ShowErrorComponent,
+  anySingle,
+  errorBundlePretty,
+  runParser,
+  try,
+ )
+import Text.Megaparsec.Char (
+  char,
+  digitChar,
+  hexDigitChar,
+  string',
+ )
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers
 -- and English yes-no.
@@ -49,20 +56,23 @@ boolParser
   :: Ord e
   => Parsec e String Bool
 boolParser = true <|> false
-  where true  = True  <$ choice (map string' ["true", "y", "yes", "1"])
-        false = False <$ choice (map string' ["false", "n", "no", "0"])
+ where
+  true = True <$ choice (map string' ["true", "y", "yes", "1"])
+  false = False <$ choice (map string' ["false", "n", "no", "0"])
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
 boundedEnumShowParser
-  :: forall a e. Ord e
+  :: forall a e
+   . Ord e
   => Bounded a
   => Enum a
   => Show a
   => Parsec e String a
 boundedEnumShowParser =
   choice . map parseShow $ sortOn (negate . length . show) [(minBound :: a) ..]
-  where parseShow a = string' (show a) $> a
+ where
+  parseShow a = string' (show a) $> a
 
 -- | Parse a comma-separated list of items.
 commaSeparated
@@ -77,7 +87,8 @@ occurrence
   => Parsec e String a
   -> Parsec e String a
 occurrence p = go
-  where go = p <|> (anySingle >> go)
+ where
+  go = p <|> (anySingle >> go)
 
 -- | Parse all occurrences of a given parser.
 occurrences
@@ -113,8 +124,10 @@ numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
 -- instances.
 parsecToJSONParser
   :: ShowErrorComponent e
-  => String            -- ^ Parser name.
-  -> Parsec e String a -- ^ Parser.
+  => String
+  -- ^ Parser name.
+  -> Parsec e String a
+  -- ^ Parser.
   -> (Value -> Parser a)
 parsecToJSONParser n p =
   withText n $ either (fail . errorBundlePretty) pure . runParser p n . T.unpack
