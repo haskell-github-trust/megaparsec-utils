@@ -4,6 +4,7 @@ module Text.Megaparsec.Time
   ( dateParser
   , dayParser
   , durationParser
+  , gregorianDayParser
   , hoursParser
   , minutesParser
   , secondsParser
@@ -16,11 +17,12 @@ import           Control.Monad.Combinators (choice, some)
 import           Data.Functor              (($>))
 import           Data.List.Extra           (lower)
 import           Data.Maybe                (fromMaybe)
-import           Data.Time                 (DayOfWeek (..), NominalDiffTime,
-                                            TimeOfDay (..),
+import           Data.Time                 (Day, DayOfWeek (..),
+                                            NominalDiffTime, TimeOfDay (..),
+                                            defaultTimeLocale, parseTimeM,
                                             secondsToNominalDiffTime)
 import           Data.Void                 (Void)
-import           Text.Megaparsec           (Parsec, try)
+import           Text.Megaparsec           (Parsec, takeRest, try)
 import           Text.Megaparsec.Char      (char, digitChar, space, space1,
                                             string')
 import           Text.Megaparsec.Utils     (posNumParser)
@@ -60,6 +62,12 @@ durationParser = try hours <|> try minutes <|> secondsParser
           s <- fromMaybe zero <$> optional secondsParser
 
           return $ m + s
+
+gregorianDayParser :: Parsec Void String Day
+gregorianDayParser = do
+  s <- takeRest
+  parseTimeM False defaultTimeLocale "%F" s <|>
+    parseTimeM False defaultTimeLocale "%d/%m/%Y" s
 
 hoursParser :: Parsec Void String NominalDiffTime
 hoursParser = secondsToNominalDiffTime . (* 3600) <$> posNumParser <* char 'h'

@@ -8,9 +8,9 @@ import           Control.Monad        (forM_)
 import           Data.Bifunctor       (Bifunctor (first))
 import           Data.Either          (isLeft)
 import           Data.List.Extra      (lower)
-import           Data.Time            (DayOfWeek (..), TimeOfDay (..),
+import           Data.Time            (Day, DayOfWeek (..), TimeOfDay (..),
                                        defaultTimeLocale, formatTime,
-                                       secondsToNominalDiffTime)
+                                       fromGregorian, secondsToNominalDiffTime)
 import           Data.Void            (Void)
 import           Test.Hspec           (Spec, context, describe, it, shouldBe,
                                        shouldSatisfy)
@@ -18,8 +18,8 @@ import           Test.QuickCheck      (Arbitrary (..), Gen, elements, forAll,
                                        property, suchThat)
 import           Text.Megaparsec      (Parsec, errorBundlePretty, runParser)
 import           Text.Megaparsec.Time (dateParser, dayParser, durationParser,
-                                       hoursParser, minutesParser,
-                                       secondsParser, timeParser)
+                                       gregorianDayParser, hoursParser,
+                                       minutesParser, secondsParser, timeParser)
 import           Text.Printf          (printf)
 
 instance Arbitrary TimeOfDay where
@@ -31,6 +31,12 @@ instance Arbitrary TimeOfDay where
 
 instance Arbitrary DayOfWeek where
   arbitrary = elements [Monday .. Sunday]
+
+instance Arbitrary Day where
+  arbitrary = fromGregorian
+    <$> elements [1970 .. 2100]
+    <*> elements [1 .. 12]
+    <*> arbitrary
 
 positive
   :: Num a
@@ -155,6 +161,12 @@ spec = do
         it "no suffix" . forAll positive $ \s ->
           parseOrPrettyError durationParser (show s) `shouldBe`
           Right (secondsToNominalDiffTime (fromInteger s))
+
+  describe "gregorian day" $ do
+    forM_ ["%F", "%d/%m/%Y"] $ \format ->
+      it format . property $ \d ->
+        parseOrPrettyError gregorianDayParser (formatTime defaultTimeLocale format d) `shouldBe`
+        Right d
 
   describe "time" $ do
     it "valid" . property $ \t ->
