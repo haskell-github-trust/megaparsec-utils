@@ -18,7 +18,7 @@ module Text.Megaparsec.Utils
 
 import           Control.Applicative             (many, some, (<|>))
 import           Control.Applicative.Combinators (choice)
-import           Control.Monad                   (replicateM, void)
+import           Control.Monad                   (replicateM)
 import           Control.Monad.Combinators       (optional)
 import           Data.Aeson.Types                (Parser, Value, withText)
 import           Data.Functor                    (($>))
@@ -125,14 +125,10 @@ uuidParser
   :: Ord e
   => Parsec e String UUID
 uuidParser = do
-  part1 <- replicateM 8 hexDigitChar
-  void $ char '-'
-  part2 <- replicateM 4 hexDigitChar
-  void $ char '-'
-  part3 <- replicateM 4 hexDigitChar
-  void $ char '-'
-  part4 <- replicateM 4 hexDigitChar
-  void $ char '-'
+  part1 <- replicateM 8 hexDigitChar <* char '-'
+  part2 <- replicateM 4 hexDigitChar <* char '-'
+  part3 <- replicateM 4 hexDigitChar <* char '-'
+  part4 <- replicateM 4 hexDigitChar <* char '-'
   part5 <- replicateM 12 hexDigitChar
 
   pure . fromJust . U.fromString $ intercalate "-" [part1, part2, part3, part4, part5]
