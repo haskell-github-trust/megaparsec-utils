@@ -9,6 +9,10 @@ github:       drlkf/megaparsec-utils
 homepage:     https://github.com/drlkf/megaparsec-utils
 bug-reports:  https://github.com/drlkf/megaparsec-utils/issues
 category:     Parsing
+tested-with:
+  - GHC == 9.8
+  - GHC == 9.6
+  - GHC == 9.4
 
 extra-source-files:
   - README.md

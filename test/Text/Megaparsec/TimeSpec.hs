@@ -6,8 +6,8 @@ module Text.Megaparsec.TimeSpec
 
 import           Control.Monad        (forM_)
 import           Data.Bifunctor       (Bifunctor (first))
+import           Data.Char            (toLower)
 import           Data.Either          (isLeft)
-import           Data.List.Extra      (lower)
 import           Data.Time            (Day, DayOfWeek (..), TimeOfDay (..),
                                        defaultTimeLocale, formatTime,
                                        fromGregorian, secondsToNominalDiffTime)
@@ -92,8 +92,10 @@ spec = do
         Right (Right d)
 
       it "lowercase" . forAll (arbitrary `suchThat` weekday) $ \d ->
-        parseOrPrettyError dayParser (lower (formatTime defaultTimeLocale format d)) `shouldBe`
-        Right (Right d)
+        parseOrPrettyError
+        dayParser
+        (fmap toLower (formatTime defaultTimeLocale format d))
+        `shouldBe` Right (Right d)
 
       it "weekend" . forAll (arbitrary `suchThat` (not . weekday)) $ \d ->
         parseOrPrettyError dayParser (formatTime defaultTimeLocale format d) `shouldSatisfy`

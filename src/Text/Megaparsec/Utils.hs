@@ -2,6 +2,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies        #-}
 
+{- |
+Module      : Text.Megaparsec.Utils
+Description : Various generic parsers and combinators.
+Copyright   : (c) drlkf, 2024
+License     : GPL-3
+Maintainer  : drlkf@drlkf.net
+Stability   : experimental
+-}
+
 module Text.Megaparsec.Utils
   ( boolParser
   , boundedEnumShowParser
@@ -62,7 +71,7 @@ commaSeparated
   -> Parsec e String (NonEmpty a)
 commaSeparated p = (:|) <$> p <*> many (char ',' >> p)
 
--- | Parse any occurrence of a given parser. Consumes any input before occurence.
+-- | Parse any occurrence of a given parser. Consumes any input before occurrence.
 occurrence
   :: Ord e
   => Parsec e String a
@@ -94,27 +103,24 @@ posNumParser
   => Parsec e String a
 posNumParser = read <$> some digitChar
 
--- | Parse an integer, without any spaces between minus sign and digits.
+-- | Parse an integer, without any space between minus sign and digits.
 numParser
   :: Ord e
   => Parsec e String Int
 numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
 
--- | Convert a 'Parsec' parser into a 'Parser' suited for 'FromJSON' instances.
+-- | Convert a 'Parsec' parser into a 'Parser' suited for 'Data.Aeson.FromJSON'
+-- instances.
 parsecToJSONParser
   :: ShowErrorComponent e
-  -- ^ Parser name.
-  => String
-  -- ^ Parser.
-  -> Parsec e String a
-  -- ^ Input value.
-  -> Value
-  -> Parser a
+  => String            -- ^ Parser name.
+  -> Parsec e String a -- ^ Parser.
+  -> (Value -> Parser a)
 parsecToJSONParser n p =
   withText n $ either (fail . errorBundlePretty) pure . runParser p n . T.unpack
 
 -- | Convert a 'Parsec' parser into a 'ReadS' parser. Useful for defining 'Read'
--- instances with 'Megaparsec'.
+-- instances with 'Text.Megaparsec'.
 parsecToReadsPrec
   :: Parsec e String a
   -> ReadS a
