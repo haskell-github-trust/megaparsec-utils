@@ -1,4 +1,6 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies        #-}
 
 module Text.Megaparsec.Utils
   ( boolParser
@@ -44,13 +46,13 @@ boolParser = true <|> false
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
 boundedEnumShowParser
-  :: Ord e
+  :: forall a e. Ord e
   => Bounded a
   => Enum a
   => Show a
   => Parsec e String a
 boundedEnumShowParser =
-  choice . map parseShow $ sortOn (negate . length . show) [minBound ..]
+  choice . map parseShow $ sortOn (negate . length . show) [(minBound :: a) ..]
   where parseShow a = string' (show a) $> a
 
 -- | Parse a comma-separated list of items.
