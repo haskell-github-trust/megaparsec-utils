@@ -5,16 +5,24 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           megaparsec-utils
-version:        0.1.0.0
-description:    Utilities for the Megaparsec library.
+version:        0.0.0.0-dev
+synopsis:       Parsers and utilities for the Megaparsec library.
+description:    Common parsers and utilities to use with the Megaparsec library.
+category:       Parsing
+homepage:       https://github.com/drlkf/megaparsec-utils
+bug-reports:    https://github.com/drlkf/megaparsec-utils/issues
 author:         drlkf
 maintainer:     drlkf@drlkf.net
 copyright:      2024 drlkf
 license:        GPL-3
 build-type:     Simple
 extra-source-files:
-    README.org
+    README.md
     CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/drlkf/megaparsec-utils
 
 library
   exposed-modules:
