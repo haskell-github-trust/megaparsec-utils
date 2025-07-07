@@ -171,6 +171,12 @@ spec = do
         Right d
 
   describe "time" $ do
+    it "invalid hours" . forAll (arbitrary `suchThat` (\h -> h > 23 && h < 100)) $ \h ->
+      parseOrPrettyError timeParser (printf "%02d:00" (h :: Int)) `shouldSatisfy` isLeft
+
+    it "invalid hours" . forAll (arbitrary `suchThat` (\m -> m > 59 && m < 100)) $ \m ->
+      parseOrPrettyError timeParser (printf "00:%02d" (m :: Int)) `shouldSatisfy` isLeft
+
     it "valid" . property $ \t ->
       parseOrPrettyError timeParser (formatTime defaultTimeLocale "%R" t) `shouldBe`
       Right t

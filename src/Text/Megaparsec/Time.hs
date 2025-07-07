@@ -23,19 +23,21 @@ module Text.Megaparsec.Time
   ) where
 
 import           Control.Applicative       (optional, (<|>))
-import           Control.Monad             (replicateM, void)
+import           Control.Monad             (replicateM)
 import           Control.Monad.Combinators (choice, some)
 import           Data.Char                 (toLower)
 import           Data.Functor              (($>))
 import           Data.Maybe                (fromMaybe)
 import           Data.Time                 (Day, DayOfWeek (..),
                                             NominalDiffTime, TimeOfDay (..),
-                                            defaultTimeLocale, parseTimeM,
+                                            defaultTimeLocale,
+                                            makeTimeOfDayValid, parseTimeM,
                                             secondsToNominalDiffTime)
 import           Text.Megaparsec           (Parsec, takeRest, try)
 import           Text.Megaparsec.Char      (char, digitChar, space, space1,
                                             string')
 import           Text.Megaparsec.Utils     (posNumParser)
+import           Text.Printf               (printf)
 
 -- | Representation of a parser result with either a number of days relative to
 -- the current day, or a 'DayOfWeek'.
@@ -125,7 +127,10 @@ timeParser = do
   h <- read <$> replicateM 2 digitChar <* char ':'
   m <- read <$> replicateM 2 digitChar
 
-  return $ TimeOfDay h m 0
+  maybe
+    (fail (printf "invalid hours or minutes %02d:%02d" h m))
+    pure
+    (makeTimeOfDayValid h m 0)
 
 -- | Zero seconds in 'NominalDiffTime'.
 zero :: NominalDiffTime
