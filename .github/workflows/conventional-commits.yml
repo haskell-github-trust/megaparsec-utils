@@ -1,0 +1,16 @@
+---
+name: Conventional commits
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Conventional commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: webiny/action-conventional-commits@v1.3.0
+...
