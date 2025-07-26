@@ -117,7 +117,9 @@ posNumParser = read <$> some digitChar
 -- | Parse an integer, without any space between minus sign and digits.
 numParser
   :: Ord e
-  => Parsec e String Int
+  => Num a
+  => Read a
+  => Parsec e String a
 numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
 
 -- | Convert a 'Parsec' parser into a 'Parser' suited for 'Data.Aeson.FromJSON'
