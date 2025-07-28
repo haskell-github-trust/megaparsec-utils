@@ -1,5 +1,7 @@
 Changelog
 
+## [1.1.1](https://github.com/drlkf/megaparsec-utils/compare/1.1.0...1.1.1) (2025-07-28)
+
 # [1.1.0](https://github.com/drlkf/megaparsec-utils/compare/1.0.0...1.1.0) (2025-07-28)
 
 
