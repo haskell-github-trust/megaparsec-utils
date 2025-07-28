@@ -3,12 +3,12 @@ name: Semantic release
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
     name: Semantic release
-    environment: master
+    environment: main
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,18 +19,20 @@ jobs:
         id: semantic
         uses: cycjimmy/semantic-release-action@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          HACKAGE_TOKEN: ${{ secrets.HACKAGE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          HACKAGE_KEY: ${{ secrets.HACKAGE_TOKEN }}
 
         with:
-          ci: ${{ env.GITHUB_REF == 'refs/head/master' }}
+          ci: ${{ github.ref == 'refs/heads/main' }}
           extra_plugins: |
+            conventional-changelog-conventionalcommits
             semantic-release-mirror-version
-            semantic-release-hackage
+            semantic-release-stack-upload
 
       - name: Semantic release output
         run: |
-          echo dry_run: ${{ env.GITHUB_REF != 'refs/head/master' }}
+          echo ref: ${{ github.ref }}
+          echo dry_run: ${{ github.ref != 'refs/heads/main' }}
           echo published: ${{ steps.semantic.outputs.new_release_published }}
           echo last_release: ${{ steps.semantic.outputs.last_release_version }}
           echo new_version: ${{ steps.semantic.outputs.new_release_version }}
