@@ -1,5 +1,12 @@
 Changelog
 
+# [1.1.0](https://github.com/drlkf/megaparsec-utils/compare/1.0.0...1.1.0) (2025-07-28)
+
+
+### Features
+
+* add on/off to booleans ([1e9b885](https://github.com/drlkf/megaparsec-utils/commit/1e9b88532ec86ef3bf229de01c0a5a81a89261ec))
+
 # 1.0.0 (2025-07-28)
 
 
