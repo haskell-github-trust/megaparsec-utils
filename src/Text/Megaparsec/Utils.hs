@@ -51,15 +51,15 @@ import Text.Megaparsec.Char (
  )
 import Text.Read (readMaybe)
 
--- | Parse a case-insensitive human-readable boolean, including C-style numbers
--- and English yes-no.
+-- | Parse a case-insensitive human-readable boolean, including C-style numbers,
+-- English yes-no and @on@ / @off@.
 boolParser
   :: Ord e
   => Parsec e String Bool
 boolParser = true <|> false
  where
-  true = True <$ choice (map string' ["true", "y", "yes", "1"])
-  false = False <$ choice (map string' ["false", "n", "no", "0"])
+  true = True <$ choice (map string' ["true", "y", "yes", "on", "1"])
+  false = False <$ choice (map string' ["false", "n", "no", "off", "0"])
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
