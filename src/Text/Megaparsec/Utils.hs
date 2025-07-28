@@ -9,6 +9,8 @@
 -- License     : GPL-3
 -- Maintainer  : drlkf@drlkf.net
 -- Stability   : experimental
+--
+-- Generic utilities and common parsers.
 module Text.Megaparsec.Utils (
   boolParser,
   boundedEnumShowParser,
