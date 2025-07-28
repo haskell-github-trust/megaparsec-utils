@@ -224,24 +224,28 @@ spec = do
       it "single" . property $ \x -> do
         let y = abs x
         parseOrPrettyError (commaSeparated numParser) (show y)
-          `shouldBe` Right (y :| [])
+          `shouldBe` Right (y :| [] :: NonEmpty Int)
 
       it "multiple" . property $ \xs -> do
         let ys = fmap abs xs
-            s = intercalate "," . map show $ N.toList ys
+            s = intercalate "," (map show (N.toList ys))
+
         parseOrPrettyError (commaSeparated numParser) s
-          `shouldBe` Right ys
+          `shouldBe` Right (ys :: NonEmpty Int)
 
     context "invalid" $ do
       it "empty" $
-        parseOrPrettyError (commaSeparated numParser) "" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated (numParser @Void @Int)) ""
+        `shouldSatisfy` isLeft
 
       it "first" $
-        parseOrPrettyError (commaSeparated numParser) "test" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated (numParser @Void @Int)) "test"
+        `shouldSatisfy` isLeft
 
       it "first partially correct" $
-        parseOrPrettyError (commaSeparated (numParser <* eof)) "test"
-          `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated ((numParser @Void @Int) <* eof)) "test"
+        `shouldSatisfy` isLeft
 
       it "second" $
-        parseOrPrettyError (commaSeparated numParser) "test" `shouldSatisfy` isLeft
+        parseOrPrettyError (commaSeparated (numParser @Void @Int)) "test"
+        `shouldSatisfy` isLeft

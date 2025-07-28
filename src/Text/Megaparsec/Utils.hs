@@ -49,6 +49,7 @@ import Text.Megaparsec.Char (
   hexDigitChar,
   string',
  )
+import Text.Read (readMaybe)
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers
 -- and English yes-no.
@@ -97,22 +98,30 @@ occurrences
   -> Parsec e String [a]
 occurrences = some . try . occurrence . try
 
--- | Parse a positive number with decimals.
+-- | Parse a positive number, with or without decimals prefixed by a @.@.
 posDecNumParser
   :: Ord e
-  => Parsec e String Double
+  => Read a
+  => Parsec e String a
 posDecNumParser = do
   num <- some digitChar
-  den <- maybe "" ("." <>) <$> optional (char '.' >> some digitChar)
+  dec <- maybe "" ("." <>) <$> optional (char '.' >> some digitChar)
 
-  return . read $ num <> den
+  let str = num <> dec
+
+  maybe (fail ("could not read from input: " <> str)) pure (readMaybe str)
 
 -- | Parse a positive integer.
 posNumParser
   :: Ord e
   => Read a
   => Parsec e String a
-posNumParser = read <$> some digitChar
+posNumParser = do
+  digits <- some digitChar
+  maybe
+    (fail ("could not read from digits: " <> digits))
+    pure
+    (readMaybe digits) 
 
 -- | Parse an integer, without any space between minus sign and digits.
 numParser
@@ -132,7 +141,7 @@ parsecToJSONParser
   -- ^ Parser.
   -> (Value -> Parser a)
 parsecToJSONParser n p =
-  withText n $ either (fail . errorBundlePretty) pure . runParser p n . T.unpack
+  withText n (either (fail . errorBundlePretty) pure . runParser p n . T.unpack)
 
 -- | Convert a 'Parsec' parser into a 'ReadS' parser. Useful for defining 'Read'
 -- instances with 'Text.Megaparsec'.
@@ -152,4 +161,7 @@ uuidParser = do
   part4 <- replicateM 4 hexDigitChar <* char '-'
   part5 <- replicateM 12 hexDigitChar
 
-  pure . fromJust . U.fromString $ intercalate "-" [part1, part2, part3, part4, part5]
+  pure
+    (fromJust
+     (U.fromString
+      (intercalate "-" [part1, part2, part3, part4, part5])))
