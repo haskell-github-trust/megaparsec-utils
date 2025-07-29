@@ -12,17 +12,22 @@
 --
 -- Generic utilities and common parsers.
 module Text.Megaparsec.Utils (
+  -- * Scalar parsers
   boolParser,
-  boundedEnumShowParser,
-  commaSeparated,
   numParser,
-  occurrence,
-  occurrences,
-  parsecToJSONParser,
-  parsecToReadsPrec,
   posDecNumParser,
   posNumParser,
   uuidParser,
+
+  -- * Combinators
+  commaSeparated,
+  occurrence,
+  occurrences,
+
+  -- * Compatibility utilities
+  boundedEnumShowParser,
+  parsecToReadsPrec,
+  parsecToJSONParser,
 ) where
 
 import Control.Applicative (many, some, (<|>))
