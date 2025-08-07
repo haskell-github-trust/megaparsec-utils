@@ -1,5 +1,7 @@
 Changelog
 
+## [1.1.3](https://github.com/haskell-github-trust/megaparsec-utils/compare/1.1.2...1.1.3) (2025-08-07)
+
 ## [1.1.2](https://github.com/haskell-github-trust/megaparsec-utils/compare/1.1.1...1.1.2) (2025-07-29)
 
 ## [1.1.1](https://github.com/haskell-github-trust/megaparsec-utils/compare/1.1.0...1.1.1) (2025-07-28)
