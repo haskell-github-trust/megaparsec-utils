@@ -5,9 +5,9 @@ author:       drlkf
 maintainer:   drlkf@drlkf.net
 copyright:    2024 drlkf
 license-file: LICENSE
-github:       drlkf/megaparsec-utils
-homepage:     https://github.com/drlkf/megaparsec-utils
-bug-reports:  https://github.com/drlkf/megaparsec-utils/issues
+github:       haskell-github-trust/megaparsec-utils
+homepage:     https://github.com/haskell-github-trust/megaparsec-utils
+bug-reports:  https://github.com/haskell-github-trust/megaparsec-utils/issues
 category:     Parsing
 tested-with:
   - GHC == 9.8

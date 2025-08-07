@@ -9,8 +9,8 @@ version:        0.0.0.0-dev
 synopsis:       Parsers and utilities for the Megaparsec library.
 description:    Common parsers and utilities to use with the Megaparsec library.
 category:       Parsing
-homepage:       https://github.com/drlkf/megaparsec-utils
-bug-reports:    https://github.com/drlkf/megaparsec-utils/issues
+homepage:       https://github.com/haskell-github-trust/megaparsec-utils
+bug-reports:    https://github.com/haskell-github-trust/megaparsec-utils/issues
 author:         drlkf
 maintainer:     drlkf@drlkf.net
 copyright:      2024 drlkf
@@ -27,7 +27,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/drlkf/megaparsec-utils
+  location: https://github.com/haskell-github-trust/megaparsec-utils
 
 library
   exposed-modules:
