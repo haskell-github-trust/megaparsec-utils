@@ -29,14 +29,6 @@ export default {
                 changelogTitle: "Changelog"
             }
         ],
-        [
-            "@semantic-release/git",
-            {
-                assets: [
-                    "CHANGELOG.md",
-                ]
-            }
-        ],
         "@semantic-release/github",
         "semantic-release-stack-upload",
     ]
