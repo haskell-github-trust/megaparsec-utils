@@ -1,9 +1,10 @@
 ---
-name: Semantic release
+name: semantic-release
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [stack-build]
+    types: [completed]
+    branches: [main]
 
 jobs:
   build:

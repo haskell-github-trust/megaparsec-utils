@@ -1,5 +1,5 @@
 ---
-name: cabal-build
+name: stack-build
 on:
   push:
     branches: main
@@ -11,40 +11,51 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc-version }}
+    name: lts-${{ matrix.stack.lts }} / ghc-${{ matrix.stack.ghc }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu]
-        ghc-version:
-          - 9.8
-          - 9.6
-          - 9.4
+        stack:
+          - lts: &default-lts 21.25
+            ghc: &default-ghc 9.4.8
+
+          - lts: 22.44
+            ghc: 9.6.7
+
+          - lts: 23.28
+            ghc: 9.8.4
 
         include:
           - os: windows
-            ghc-version: 9.6
+            stack:
+              lts: *default-lts
+              ghc: *default-ghc
 
           - os: macos
-            ghc-version: 9.6
+            stack:
+              lts: *default-lts
+              ghc: *default-ghc
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up GHC ${{ matrix.ghc-version }}
+      - name: Set up Stack LTS ${{ matrix.stack-lts }}
         uses: haskell-actions/setup@v2
         id: setup
         with:
-          ghc-version: ${{ matrix.ghc-version }}
-          # Defaults, added for clarity:
-          cabal-version: latest
-          cabal-update: true
+          ghc-version: ${{ matrix.stack.ghc }}
+          enable-stack: true
+          stack-setup-ghc: true
+          stack-no-global: true
 
       - name: Configure the build
         run: |
-          cabal configure --enable-tests --enable-benchmarks --disable-documentation
-          cabal build --dry-run
+          echo "with key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}"
+
+          stack config set resolver lts-${{ matrix.stack.lts }}
+          stack build --dry-run
           # The last step generates dist-newstyle/cache/plan.json for the cache key.
 
       - name: Restore cached dependencies
@@ -54,12 +65,12 @@ jobs:
           key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-cabal-${{ steps.setup.outputs.cabal-version }}
 
         with:
-          path: ${{ steps.setup.outputs.cabal-store }}
+          path: ${{ steps.setup.outputs.stack-root }}
           key: ${{ env.key }}-plan-${{ hashFiles('**/plan.json') }}
           restore-keys: ${{ env.key }}-
 
       - name: Install dependencies
-        run: cabal build all --only-dependencies
+        run: stack build --only-dependencies
 
       # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
       - name: Save cached dependencies
@@ -67,19 +78,19 @@ jobs:
         # Caches are immutable, trying to save with the same key would error.
         if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
         with:
-          path: ${{ steps.setup.outputs.cabal-store }}
+          path: ${{ steps.setup.outputs.stack-root }}
           key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Build
-        run: cabal build all
+        run: stack build
 
       - name: Run tests
-        run: cabal test all
+        run: stack test
 
       - name: Check cabal file
-        run: cabal check
+        run: stack check
         continue-on-error: true
 
       - name: Build documentation
-        run: cabal haddock all
+        run: stack haddock
 ...

@@ -158,8 +158,8 @@ spec = do
 
     context "posDecNumParser" $ do
       it "no decimals" . property $ \v ->
-        parseMaybe' posDecNumParser (show (abs (v :: Int)))
-          `shouldBe` Just (fromIntegral (abs v))
+        parseMaybe' (posDecNumParser @Void @Int) (show (abs (v :: Int)))
+          `shouldBe` Just (abs v)
 
       it "decimals" . property $ \v ->
         parseMaybe' posDecNumParser (printf "%f" (abs (v :: Double)))

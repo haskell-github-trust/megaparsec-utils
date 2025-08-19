@@ -1,3 +1,4 @@
+---
 name:         megaparsec-utils
 version:      0.0.0.0-dev
 license:      GPL-3
@@ -51,7 +52,9 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
+
     dependencies:
       - megaparsec-utils
       - hspec
       - QuickCheck
+...
