@@ -1,0 +1,290 @@
+#!/usr/bin/env -S sbcl --script
+
+(require :uiop)
+
+(defvar *run-main* t)
+
+(defun whitespace-p (char)
+  (member char '(#\Space #\Tab #\Newline #\Return)))
+
+(defun word-char-p (char)
+  (or (alphanumericp char) (char= char #\_)))
+
+(defun identifier-char-p (char)
+  (or (alphanumericp char) (member char '(#\_ #\'))))
+
+(defun identifier-start-p (char)
+  (or (alpha-char-p char) (char= char #\_)))
+
+(defun starts-with-p (prefix string)
+  (and (>= (length string) (length prefix))
+       (string= prefix string :end2 (length prefix))))
+
+(defun starts-with-word-p (word string)
+  (and (starts-with-p word string)
+       (let ((after (subseq string (length word))))
+         (or (zerop (length after))
+             (not (word-char-p (char after 0)))))))
+
+(defun first-uppercase-word (string)
+  (dolist (token (uiop:split-string string :separator '(#\Space #\Tab)))
+    (when (and (plusp (length token))
+               (upper-case-p (char token 0)))
+      (return token))))
+
+(defun declaration-name (line)
+  (let ((pos (if (and (plusp (length line)) (char= (char line 0) #\[)) 1 0)))
+    (when (< pos (length line))
+      (let ((name nil)
+            (name-end nil))
+        (if (char= (char line pos) #\()
+            (let ((close (position #\) line :start pos)))
+              (when close
+                (setf name (subseq line (1+ pos) close))
+                (setf name-end (1+ close))))
+            (when (identifier-start-p (char line pos))
+              (let ((end (position-if-not #'identifier-char-p line :start pos)))
+                (setf name (subseq line pos end))
+                (setf name-end end))))
+        (when (and name name-end
+                   (starts-with-p
+                    "::"
+                    (string-left-trim '(#\Space #\Tab) (subseq line name-end))))
+          name)))))
+
+(defun type-declaration-name (line)
+  (dolist (kw '("data" "newtype" "type" "pattern"))
+    (when (starts-with-word-p kw line)
+      (let ((rest (string-left-trim '(#\Space #\Tab) (subseq line (length kw)))))
+        (when (starts-with-word-p "family" rest)
+          (setf rest (string-left-trim '(#\Space #\Tab) (subseq rest (length "family")))))
+        (when (and (plusp (length rest))
+                   (upper-case-p (char rest 0)))
+          (let ((end (position-if-not #'identifier-char-p rest)))
+            (return (subseq rest 0 end))))))))
+
+(defun parse-hoogle (input)
+  (let ((module-name "")
+        (in-class nil)
+        (names '()))
+    (dolist (line (uiop:split-string input :separator '(#\Newline)))
+      (let ((line (string-right-trim '(#\Return) line)))
+        (cond
+          ((starts-with-p "module " line)
+           (setf module-name (second (uiop:split-string line :separator '(#\Space #\Tab))))
+           (setf in-class nil))
+          (in-class
+           (when (string= (string-trim '(#\Space #\Tab) line) "}")
+             (setf in-class nil)))
+          ((starts-with-p "class " line)
+           (let* ((rest (subseq line (length "class ")))
+                  (where-pos (search " where" rest)))
+             (when (and where-pos
+                        (starts-with-p
+                         "{" (string-left-trim
+                              '(#\Space #\Tab)
+                              (subseq rest (+ where-pos (length " where"))))))
+               (let ((class-name (first-uppercase-word (subseq rest 0 where-pos))))
+                 (when class-name
+                   (push (format nil "~a.~a" module-name class-name) names))
+                 (setf in-class t)))))
+          ((starts-with-p "instance " line)
+           (let* ((rest (subseq line (length "instance ")))
+                  (where-pos (search " where" rest)))
+             (push (format nil "~a.~a" module-name
+                           (string-trim
+                            '(#\Space #\Tab)
+                            (if where-pos (subseq rest 0 where-pos) rest)))
+                   names)))
+          ((declaration-name line)
+           (unless (starts-with-p "[" line)
+             (push (format nil "~a.~a" module-name (declaration-name line)) names)))
+          ((type-declaration-name line)
+           (push (format nil "~a.~a" module-name (type-declaration-name line)) names)))))
+    (sort (remove-duplicates names :test #'string=) #'string<)))
+
+(defun line-matches-instance-p (line name)
+  (let ((prefix (concatenate 'string "instance " name)))
+    (and (starts-with-p prefix line)
+         (let ((after (subseq line (length prefix))))
+           (or (zerop (length after))
+               (whitespace-p (char after 0)))))))
+
+(defun line-matches-name-p (line name)
+  (and (starts-with-p name line)
+       (let ((after (subseq line (length name))))
+         (or (zerop (length after))
+             (not (word-char-p (char after 0)))))))
+
+(defun contains-word-p (line word)
+  (let ((pos 0))
+    (loop
+      (let ((found (search word line :start2 pos)))
+        (when (null found)
+          (return nil))
+        (when (and (or (zerop found) (not (word-char-p (char line (1- found)))))
+                   (let ((after (+ found (length word))))
+                     (or (>= after (length line))
+                         (not (word-char-p (char line after))))))
+          (return t))
+        (setf pos (1+ found))))))
+
+(defun line-matches-type-decl-p (line name)
+  (and (some (lambda (kw) (starts-with-word-p kw line)) '("data" "newtype" "type" "class" "pattern"))
+       (contains-word-p line name)))
+
+(defun any-line-p (source predicate)
+  (let ((pos 0))
+    (loop
+      (let ((line-end (or (position #\Newline source :start pos) (length source))))
+        (cond ((funcall predicate (subseq source pos line-end))
+               (return t))
+              ((>= line-end (length source))
+               (return nil))
+              (t
+               (setf pos (1+ line-end))))))))
+
+(defun is-local-declaration (source name)
+  (if (find #\Space name)
+      (any-line-p source (lambda (line) (line-matches-instance-p line name)))
+      (any-line-p source (lambda (line)
+                           (or (line-matches-name-p line name)
+                               (line-matches-type-decl-p line name))))))
+
+(defun line-matches-declaration-p (line name)
+  (if (find #\Space name)
+      (line-matches-instance-p line name)
+      (line-matches-name-p line name)))
+
+(defun find-declaration (source name)
+  (let ((pos 0))
+    (loop
+      (let ((line-end (or (position #\Newline source :start pos) (length source))))
+        (when (line-matches-declaration-p (subseq source pos line-end) name)
+          (return pos))
+        (when (>= line-end (length source))
+          (return nil))
+        (setf pos (1+ line-end))))))
+
+(defun comment-block-before (source pos)
+  (when (and (plusp pos) (char= (char source (1- pos)) #\Newline))
+    (let ((end pos)
+          (lines '()))
+      (loop
+        (let* ((nl (position #\Newline source :end (1- end) :from-end t))
+               (line-start (if nl (1+ nl) 0)))
+          (let ((line (subseq source line-start end)))
+            (unless (starts-with-p "--" line)
+              (return))
+            (push line lines)
+            (setf end line-start)
+            (when (zerop line-start)
+              (return)))))
+      (when lines
+        (format nil "~{~a~}" (nreverse lines))))))
+
+(defun add-since (source name version)
+  (let ((match (find-declaration source name)))
+    (when (and match (search "@since" source))
+      (let ((block (comment-block-before source match)))
+        (when (and block (search "@since" block))
+          (return-from add-since source))))
+    (unless match
+      (error "Cannot locate public declaration: ~a" name))
+    (let ((block (comment-block-before source match)))
+      (if block
+          (concatenate 'string (subseq source 0 match)
+                       "-- @since " version (string #\Newline)
+                       (subseq source match))
+          (concatenate 'string (subseq source 0 match)
+                       "-- | @since " version (string #\Newline)
+                       (subseq source match))))))
+
+(defun version-line-p (line)
+  (and (starts-with-p "version:" line)
+       (let ((after (subseq line (length "version:"))))
+         (and (plusp (length after))
+              (whitespace-p (char after 0))))))
+
+(defun replace-version-line (source version)
+  (let ((pos 0)
+        (out '()))
+    (loop
+      (let ((line-end (or (position #\Newline source :start pos) (length source))))
+        (let ((line (subseq source pos line-end)))
+          (if (version-line-p line)
+              (push (format nil "version: ~a" version) out)
+              (push line out)))
+        (when (>= line-end (length source))
+          (return))
+        (push (string #\Newline) out)
+        (setf pos (1+ line-end))))
+    (format nil "~{~a~}" (nreverse out))))
+
+(defun write-file-string (path string)
+  (with-open-file (stream path :direction :output :if-exists :supersede :if-does-not-exist :create)
+    (write-string string stream)))
+
+(defun update-version (path version)
+  (let ((source (uiop:read-file-string path)))
+    (write-file-string path (replace-version-line source version))))
+
+(defun find-hoogle-file (root)
+  (let ((files '()))
+    (labels ((visit (dir)
+               (dolist (sub (uiop:subdirectories dir))
+                 (visit sub))
+               (dolist (file (uiop:directory-files dir))
+                 (when (and (string= (pathname-type file) "txt")
+                            (search "doc/html" (namestring file)))
+                   (push (namestring file) files)))))
+      (visit root))
+    (unless files
+      (error "cabal haddock did not produce a Hoogle file"))
+    (first (sort files #'> :key #'length))))
+
+(defun read-baseline (path)
+  (if (probe-file path)
+      (remove-if (lambda (l)
+                   (zerop (length l)))
+                 (mapcar (lambda (l)
+                           (string-right-trim '(#\Return) l))
+                         (uiop:read-file-lines path)))
+      '()))
+
+(defun main ()
+  (let ((version (first (uiop:command-line-arguments))))
+    (unless version
+      (error "usage: prepare-release.lisp VERSION"))
+    (let* ((root (uiop:getcwd))
+           (package-yaml (merge-pathnames "package.yaml" root))
+           (cabal (merge-pathnames "megaparsec-utils.cabal" root))
+           (api-dir (merge-pathnames "api/" root))
+           (baseline-path (merge-pathnames "megaparsec-utils.api" api-dir)))
+      (update-version package-yaml version)
+      (update-version cabal version)
+      (uiop:run-program (list "cabal" "haddock" "--haddock-hoogle")
+                        :directory root :output t :error-output t)
+      (let* ((hoogle-file (find-hoogle-file (merge-pathnames "dist-newstyle/" root)))
+             (keys (parse-hoogle (uiop:read-file-string hoogle-file)))
+             (baseline (read-baseline baseline-path)))
+        (dolist (key (remove-if (lambda (k) (member k baseline :test #'string=)) keys))
+          (let* ((dot (position #\. key :from-end t))
+                 (name (and dot (subseq key (1+ dot)))))
+            (when name
+              (let* ((module (subseq key 0 dot))
+                     (file (merge-pathnames
+                            (format nil "~a.hs" (substitute #\/ #\. module))
+                            (merge-pathnames "src/" root))))
+                (unless (probe-file file)
+                  (error "Cannot locate module source for ~a" key))
+                (let ((source (uiop:read-file-string file)))
+                  (when (is-local-declaration source name)
+                    (write-file-string file (add-since source name version))))))))
+        (ensure-directories-exist baseline-path)
+        (write-file-string baseline-path (format nil "~{~a~%~}" keys))
+        (uiop:run-program (list "cabal" "build")
+                          :directory root :output t :error-output t)))))
+
+(when *run-main*
+  (main))

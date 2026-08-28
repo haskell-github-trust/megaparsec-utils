@@ -10,26 +10,37 @@ export default {
             {
                 "preset": "conventionalcommits",
                 "releaseRules": [
-                    { "type": "docs", "release": "patch" }
-                ]
-            }
+                    { "type": "docs", "release": "patch" },
+                ],
+            },
         ],
         "@semantic-release/release-notes-generator",
         [
             "semantic-release-mirror-version",
             {
                 "fileGlob": "@(package.yaml|megaparsec-utils.cabal)",
-                "placeholderRegExp": "0.0.0-dev"
-            }
+                "placeholderRegExp": "0.0.0-dev",
+            },
         ],
         [
-            "@semantic-release/changelog",
+            "@semantic-release/exec",
             {
-                changelogFile: "CHANGELOG.md",
-                changelogTitle: "Changelog"
-            }
+                "prepareCmd":
+                    "./scripts/prepare-release.lisp ${nextRelease.version}",
+            },
+        ],
+        [
+            "@semantic-release/git",
+            {
+                assets: [
+                    "package.yaml",
+                    "*.cabal",
+                    "src/**/*.hs",
+                    "api/**/*.api",
+                ],
+            },
         ],
         "@semantic-release/github",
         "semantic-release-stack-upload",
-    ]
-}
+    ],
+};
