@@ -18,8 +18,8 @@ jobs:
       matrix:
         os: [ubuntu]
         stack:
-          - lts: &default-lts 21.25
-            ghc: &default-ghc 9.4.8
+          - lts: &default-lts 24.56
+            ghc: &default-ghc 9.10.3
 
           - lts: 22.44
             ghc: 9.6.7
