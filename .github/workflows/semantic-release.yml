@@ -21,6 +21,15 @@ jobs:
           app-id: "${{ secrets.SEMANTIC_RELEASE_APP_ID }}"
           private-key: "${{ secrets.SEMANTIC_RELEASE_PRIVATE_KEY }}"
 
+      - name: Setup SBCL
+        uses: cheeze2000/setup-sbcl@v1
+
+      - name: Verify installation
+        run: >-
+          sbcl --non-interactive
+          --eval "(print (ql:client-version))"
+          --eval "(print (asdf:asdf-version))"
+
       - name: Semantic release
         id: semantic
         uses: cycjimmy/semantic-release-action@v4

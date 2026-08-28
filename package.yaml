@@ -11,9 +11,9 @@ homepage:     https://github.com/haskell-github-trust/megaparsec-utils
 bug-reports:  https://github.com/haskell-github-trust/megaparsec-utils/issues
 category:     Parsing
 tested-with:
+  - GHC == 9.10
   - GHC == 9.8
   - GHC == 9.6
-  - GHC == 9.4
 
 extra-source-files:
   - README.md
@@ -25,6 +25,7 @@ description: |
 dependencies:
   - base >= 4.7 && < 5
   - aeson >= 2.0 && < 3
+  - bytestring >= 0.11 && < 0.13
   - megaparsec >= 9.0 && < 10
   - parser-combinators >= 1.0 && < 2
   - text >= 2.0 && < 3

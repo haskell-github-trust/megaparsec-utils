@@ -1,0 +1,30 @@
+---
+name: release-helper
+on:
+  push:
+    branches: main
+  pull_request:
+    branches: main
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup SBCL
+        uses: cheeze2000/setup-sbcl@v1
+
+      - name: Verify installation
+        run: >-
+          sbcl --non-interactive
+          --eval "(print (ql:client-version))"
+          --eval "(print (asdf:asdf-version))"
+
+      - name: test release helper
+        run: |
+          cd scripts
+          ./prepare-release.test.lisp
