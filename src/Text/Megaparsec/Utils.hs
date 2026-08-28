@@ -10,7 +10,8 @@
 -- Maintainer  : drlkf@drlkf.net
 -- Stability   : experimental
 --
--- Generic utilities and common parsers.
+-- String-based shims over 'Text.Megaparsec.Utils.Char'. New code should use
+-- 'Text.Megaparsec.Utils.Char' or 'Text.Megaparsec.Utils.Byte' directly.
 module Text.Megaparsec.Utils (
   -- * Scalar parsers
   boolParser,
@@ -30,43 +31,25 @@ module Text.Megaparsec.Utils (
   parsecToJSONParser,
 ) where
 
-import Control.Applicative (many, some, (<|>))
-import Control.Applicative.Combinators (choice)
-import Control.Monad (replicateM)
-import Control.Monad.Combinators (optional)
 import Data.Aeson.Types (Parser, Value, withText)
-import Data.Functor (($>))
-import Data.List (intercalate, sortOn)
-import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Maybe (fromJust)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.Text as T (unpack)
 import Data.UUID (UUID)
-import qualified Data.UUID as U (fromString)
 import Text.Megaparsec (
   Parsec,
   ShowErrorComponent,
-  anySingle,
   errorBundlePretty,
   runParser,
-  try,
  )
-import Text.Megaparsec.Char (
-  char,
-  digitChar,
-  hexDigitChar,
-  string',
- )
-import Text.Read (readMaybe)
+import qualified Text.Megaparsec.Utils.Char as Char
+import qualified Text.Megaparsec.Utils.Common as Common
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers,
 -- English yes-no and @on@ / @off@.
 boolParser
   :: Ord e
   => Parsec e String Bool
-boolParser = true <|> false
- where
-  true = True <$ choice (map string' ["true", "y", "yes", "on", "1"])
-  false = False <$ choice (map string' ["false", "n", "no", "off", "0"])
+boolParser = Char.boolParser
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
@@ -77,58 +60,42 @@ boundedEnumShowParser
   => Enum a
   => Show a
   => Parsec e String a
-boundedEnumShowParser =
-  choice . map parseShow $ sortOn (negate . length . show) [(minBound :: a) ..]
- where
-  parseShow a = string' (show a) $> a
+boundedEnumShowParser = Char.boundedEnumShowParser
 
 -- | Parse a comma-separated list of items.
 commaSeparated
   :: Ord e
   => Parsec e String a
   -> Parsec e String (NonEmpty a)
-commaSeparated p = (:|) <$> p <*> many (char ',' >> p)
+commaSeparated = Char.commaSeparated
 
 -- | Parse any occurrence of a given parser. Consumes any input before occurrence.
 occurrence
   :: Ord e
   => Parsec e String a
   -> Parsec e String a
-occurrence p = go
- where
-  go = p <|> (anySingle >> go)
+occurrence = Common.occurrence
 
 -- | Parse all occurrences of a given parser.
 occurrences
   :: Ord e
   => Parsec e String a
   -> Parsec e String [a]
-occurrences = some . try . occurrence . try
+occurrences = Common.occurrences
 
 -- | Parse a positive number, with or without decimals prefixed by a @.@.
 posDecNumParser
   :: Ord e
   => Read a
   => Parsec e String a
-posDecNumParser = do
-  num <- some digitChar
-  dec <- maybe "" ("." <>) <$> optional (char '.' >> some digitChar)
-
-  let str = num <> dec
-
-  maybe (fail ("could not read from input: " <> str)) pure (readMaybe str)
+posDecNumParser = Char.posDecNumParser
 
 -- | Parse a positive integer.
 posNumParser
   :: Ord e
   => Read a
   => Parsec e String a
-posNumParser = do
-  digits <- some digitChar
-  maybe
-    (fail ("could not read from digits: " <> digits))
-    pure
-    (readMaybe digits) 
+posNumParser = Char.posNumParser
 
 -- | Parse an integer, without any space between minus sign and digits.
 numParser
@@ -136,7 +103,7 @@ numParser
   => Num a
   => Read a
   => Parsec e String a
-numParser = (char '-' >> negate <$> posNumParser) <|> posNumParser
+numParser = Char.numParser
 
 -- | Convert a 'Parsec' parser into a 'Parser' suited for 'Data.Aeson.FromJSON'
 -- instances.
@@ -161,14 +128,4 @@ parsecToReadsPrec p = either (const []) (\x -> [(x, "")]) . runParser p "string"
 uuidParser
   :: Ord e
   => Parsec e String UUID
-uuidParser = do
-  part1 <- replicateM 8 hexDigitChar <* char '-'
-  part2 <- replicateM 4 hexDigitChar <* char '-'
-  part3 <- replicateM 4 hexDigitChar <* char '-'
-  part4 <- replicateM 4 hexDigitChar <* char '-'
-  part5 <- replicateM 12 hexDigitChar
-
-  pure
-    (fromJust
-     (U.fromString
-      (intercalate "-" [part1, part2, part3, part4, part5])))
+uuidParser = Char.uuidParser
