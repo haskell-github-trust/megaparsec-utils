@@ -158,7 +158,7 @@ spec = do
 
     context "posDecNumParser" $ do
       it "no decimals" . property $ \v ->
-        parseMaybe' (posDecNumParser @Void @Int) (show (abs (v :: Int)))
+        parseMaybe' (posDecNumParser :: Parsec Void String Int) (show (abs (v :: Int)))
           `shouldBe` Just (abs v)
 
       it "decimals" . property $ \v ->
@@ -235,17 +235,17 @@ spec = do
 
     context "invalid" $ do
       it "empty" $
-        parseOrPrettyError (commaSeparated (numParser @Void @Int)) ""
+        parseOrPrettyError (commaSeparated (numParser :: Parsec Void String Int)) ""
         `shouldSatisfy` isLeft
 
       it "first" $
-        parseOrPrettyError (commaSeparated (numParser @Void @Int)) "test"
+        parseOrPrettyError (commaSeparated (numParser :: Parsec Void String Int)) "test"
         `shouldSatisfy` isLeft
 
       it "first partially correct" $
-        parseOrPrettyError (commaSeparated ((numParser @Void @Int) <* eof)) "test"
+        parseOrPrettyError (commaSeparated ((numParser :: Parsec Void String Int) <* eof)) "test"
         `shouldSatisfy` isLeft
 
       it "second" $
-        parseOrPrettyError (commaSeparated (numParser @Void @Int)) "test"
+        parseOrPrettyError (commaSeparated (numParser :: Parsec Void String Int)) "test"
         `shouldSatisfy` isLeft
