@@ -44,8 +44,6 @@ import Text.Megaparsec.Utils.Common (
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers,
 -- English yes-no and @on@ / @off@.
---
--- @since UNRELEASED@
 boolParser
   :: MonadParsec e s m
   => Token s ~ Word8
@@ -54,8 +52,6 @@ boolParser = mkBoolParser char' (toEnum . fromEnum)
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
---
--- @since UNRELEASED@
 boundedEnumShowParser
   :: forall a e s m
    . MonadParsec e s m
@@ -67,8 +63,6 @@ boundedEnumShowParser
 boundedEnumShowParser = mkBoundedEnumShowParser char' (toEnum . fromEnum)
 
 -- | Parse a comma-separated list of items.
---
--- @since UNRELEASED@
 commaSeparated
   :: MonadParsec e s m
   => Token s ~ Word8
@@ -77,8 +71,6 @@ commaSeparated
 commaSeparated = mkCommaSeparated (char 44)
 
 -- | Parse a positive number, with or without decimals prefixed by a @.@.
---
--- @since UNRELEASED@
 posDecNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -88,8 +80,6 @@ posDecNumParser
 posDecNumParser = mkPosDecNumParser digitChar (char 46) (toEnum . fromIntegral)
 
 -- | Parse a positive integer.
---
--- @since UNRELEASED@
 posNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -99,8 +89,6 @@ posNumParser
 posNumParser = mkPosNumParser digitChar (toEnum . fromIntegral)
 
 -- | Parse an integer, without any space between minus sign and digits.
---
--- @since UNRELEASED@
 numParser
   :: MonadFail m
   => MonadParsec e s m
@@ -111,8 +99,6 @@ numParser
 numParser = mkNumParser (char 45) posNumParser
 
 -- | Parse a RFC4122-compliant UUID.
---
--- @since UNRELEASED@
 uuidParser
   :: MonadParsec e s m
   => Token s ~ Word8
