@@ -10,84 +10,31 @@ permissions:
   contents: read
 
 jobs:
+  generate:
+    name: Generate matrix
+    runs-on: ubuntu-latest
+    outputs:
+      stack-yamls: ${{ steps.generate.outputs.stack-yamls }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: generate
+        uses: freckle/stack-action/generate-matrix@v5
+
   build:
-    name: lts-${{ matrix.stack.lts }} / ghc-${{ matrix.stack.ghc }} / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}-latest
+    name: ${{ matrix.stack-yaml }} / ${{ matrix.os }}
+    needs: generate
+    runs-on: ${{ matrix.os == 'macos' && 'macos-15' || format('{0}-latest', matrix.os) }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu]
-        stack:
-          - lts: &default-lts 24.56
-            ghc: &default-ghc 9.10.3
-
-          - lts: 22.44
-            ghc: 9.6.7
-
-          - lts: 23.28
-            ghc: 9.8.4
-
-        include:
-          - os: windows
-            stack:
-              lts: *default-lts
-              ghc: *default-ghc
-
-          - os: macos
-            stack:
-              lts: *default-lts
-              ghc: *default-ghc
-
+        os: [ubuntu, macos, windows]
+        stack-yaml: ${{ fromJSON(needs.generate.outputs.stack-yamls) }}
+    env:
+      STACK_YAML: ${{ matrix.stack-yaml }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Stack LTS ${{ matrix.stack-lts }}
-        uses: haskell-actions/setup@v2
-        id: setup
-        with:
-          ghc-version: ${{ matrix.stack.ghc }}
-          enable-stack: true
-          stack-setup-ghc: true
-          stack-no-global: true
-
-      - name: Configure the build
-        run: |
-          echo "with key: ${{ runner.os }}-lts-${{ matrix.stack.lts }}"
-          echo "stack root: ${{ steps.setup.outputs.stack-root }}"
-
-          stack config set resolver lts-${{ matrix.stack.lts }}
-          stack build --dry-run
-          # The last step generates dist-newstyle/cache/plan.json for the cache key.
-
-      - name: Restore cached dependencies
-        uses: actions/cache/restore@v3
-        id: cache
-        env:
-          key: ${{ runner.os }}-lts-${{ matrix.stack.lts }}
-
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}
-          key: ${{ env.key }}-plan-${{ hashFiles('dist-newstyle/cache/plan.json') }}
-          restore-keys: ${{ env.key }}-
-
-      - name: Install dependencies
-        run: stack build --only-dependencies
-
-      # Cache dependencies already here, so that we do not have to rebuild them
-      # should the subsequent steps fail.
-      - name: Save cached dependencies
-        uses: actions/cache/save@v3
-        # Caches are immutable, trying to save with the same key would error.
-        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
-      - name: Build
-        run: stack build
-
-      - name: Run tests
-        run: stack test
+      - uses: freckle/stack-action@v5
 
       - name: Check cabal file
         run: stack exec -- cabal check

@@ -129,7 +129,7 @@ mkPosNumParser digitChar toChar = do
 -- | Build a parser for an integer, without any space between minus sign and
 -- digits.
 mkNumParser
-  :: (MonadFail m, MonadParsec e s m, Num a, Read a)
+  :: (MonadFail m, MonadParsec e s m, Num a)
   => m (Token s)
   -- ^ Minus-sign parser.
   -> m a
