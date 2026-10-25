@@ -1,6 +1,6 @@
 ---
 name:         megaparsec-utils
-version:      0.0.0.0-dev
+version:      0.2.0.0
 license:      GPL-3
 author:       drlkf
 maintainer:   drlkf@drlkf.net

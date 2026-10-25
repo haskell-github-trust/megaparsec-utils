@@ -53,6 +53,8 @@ import Text.Megaparsec.Utils.Common (
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers,
 -- English yes-no and @on@ / @off@.
+--
+-- @since 0.2.0.0
 boolParser
   :: MonadParsec e s m
   => Token s ~ Char
@@ -61,6 +63,8 @@ boolParser = mkBoolParser char' id
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
+--
+-- @since 0.2.0.0
 boundedEnumShowParser
   :: forall a e s m
    . MonadParsec e s m
@@ -72,6 +76,8 @@ boundedEnumShowParser
 boundedEnumShowParser = mkBoundedEnumShowParser char' id
 
 -- | Parse a comma-separated list of items.
+--
+-- @since 0.2.0.0
 commaSeparated
   :: MonadParsec e s m
   => Token s ~ Char
@@ -80,6 +86,8 @@ commaSeparated
 commaSeparated = mkCommaSeparated (char ',')
 
 -- | Parse a positive number, with or without decimals prefixed by a @.@.
+--
+-- @since 0.2.0.0
 posDecNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -89,6 +97,8 @@ posDecNumParser
 posDecNumParser = mkPosDecNumParser digitChar (char '.') id
 
 -- | Parse a positive integer.
+--
+-- @since 0.2.0.0
 posNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -98,6 +108,8 @@ posNumParser
 posNumParser = mkPosNumParser digitChar id
 
 -- | Parse an integer, without any space between minus sign and digits.
+--
+-- @since 0.2.0.0
 numParser
   :: MonadFail m
   => MonadParsec e s m
@@ -109,6 +121,8 @@ numParser = mkNumParser (char '-') posNumParser
 
 -- | Convert a 'Parsec' parser on 'Text' into a 'Parser' suited for
 -- 'Data.Aeson.FromJSON' instances.
+--
+-- @since 0.2.0.0
 parsecToJSONParser
   :: ShowErrorComponent e
   => String
@@ -120,6 +134,8 @@ parsecToJSONParser n p =
   withText n (either (fail . errorBundlePretty) pure . runParser p n)
 
 -- | Parse a RFC4122-compliant UUID.
+--
+-- @since 0.2.0.0
 uuidParser
   :: MonadParsec e s m
   => Token s ~ Char

@@ -40,17 +40,23 @@ import Text.Megaparsec (MonadParsec, Token, anySingle, try)
 import Text.Read (readMaybe)
 
 -- | Parse any occurrence of a given parser. Consumes any input before occurrence.
+--
+-- @since 0.2.0.0
 occurrence :: MonadParsec e s m => m a -> m a
 occurrence p = go
  where
   go = p <|> (anySingle >> go)
 
 -- | Parse all occurrences of a given parser.
+--
+-- @since 0.2.0.0
 occurrences :: MonadParsec e s m => m a -> m [a]
 occurrences = some . try . occurrence . try
 
 -- | Build a case-insensitive human-readable boolean parser, including C-style
 -- numbers, English yes-no and @on@ / @off@.
+--
+-- @since 0.2.0.0
 mkBoolParser
   :: MonadParsec e s m
   => (Token s -> m (Token s))
@@ -65,6 +71,8 @@ mkBoolParser char' fromChar = true <|> false
 
 -- | Build a parser for a 'Bounded' 'Enum' type that has a 'Show' instance,
 -- trying all possibilities, case-insensitive, in the 'Enum' order.
+--
+-- @since 0.2.0.0
 mkBoundedEnumShowParser
   :: forall a e s m
    . MonadParsec e s m
@@ -82,6 +90,8 @@ mkBoundedEnumShowParser char' fromChar =
   parseShow a = try (traverse_ (char' . fromChar) (show a)) $> a
 
 -- | Build a parser for a comma-separated list of items.
+--
+-- @since 0.2.0.0
 mkCommaSeparated
   :: MonadParsec e s m
   => m (Token s)
@@ -92,6 +102,8 @@ mkCommaSeparated comma p = (:|) <$> p <*> many (comma >> p)
 
 -- | Build a parser for a positive number, with or without decimals prefixed by
 -- a @.@.
+--
+-- @since 0.2.0.0
 mkPosDecNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -113,6 +125,8 @@ mkPosDecNumParser digitChar dot toChar = do
   maybe (fail ("could not read from input: " <> str)) pure (readMaybe str)
 
 -- | Build a parser for a positive integer.
+--
+-- @since 0.2.0.0
 mkPosNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -132,6 +146,8 @@ mkPosNumParser digitChar toChar = do
 
 -- | Build a parser for an integer, without any space between minus sign and
 -- digits.
+--
+-- @since 0.2.0.0
 mkNumParser
   :: MonadFail m
   => MonadParsec e s m
@@ -144,6 +160,8 @@ mkNumParser
 mkNumParser minus posNumParser = (minus >> negate <$> posNumParser) <|> posNumParser
 
 -- | Build a parser for a RFC4122-compliant UUID.
+--
+-- @since 0.2.0.0
 mkUuidParser
   :: MonadParsec e s m
   => m (Token s)
