@@ -67,7 +67,7 @@ mkBoolParser char' fromChar = true <|> false
 -- trying all possibilities, case-insensitive, in the 'Enum' order.
 mkBoundedEnumShowParser
   :: forall a e s m
-   . (MonadParsec e s m)
+   . MonadParsec e s m
   => Bounded a
   => Enum a
   => Show a
