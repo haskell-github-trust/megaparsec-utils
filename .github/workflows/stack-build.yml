@@ -20,6 +20,13 @@ jobs:
       - id: generate
         uses: freckle/stack-action/generate-matrix@v5
 
+  single-constraints:
+    name: Single constraint per line
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: "! grep -rnPzo '\\([^()]*,[^()]*\\)\\s*=>' src test"
+
   build:
     name: ${{ matrix.stack-yaml }} / ${{ matrix.os }}
     needs: generate

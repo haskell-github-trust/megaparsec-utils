@@ -93,7 +93,9 @@ mkCommaSeparated comma p = (:|) <$> p <*> many (comma >> p)
 -- | Build a parser for a positive number, with or without decimals prefixed by
 -- a @.@.
 mkPosDecNumParser
-  :: (MonadFail m, MonadParsec e s m, Read a)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Read a
   => m (Token s)
   -- ^ Digit parser.
   -> m (Token s)
@@ -112,7 +114,9 @@ mkPosDecNumParser digitChar dot toChar = do
 
 -- | Build a parser for a positive integer.
 mkPosNumParser
-  :: (MonadFail m, MonadParsec e s m, Read a)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Read a
   => m (Token s)
   -- ^ Digit parser.
   -> (Token s -> Char)
@@ -129,7 +133,9 @@ mkPosNumParser digitChar toChar = do
 -- | Build a parser for an integer, without any space between minus sign and
 -- digits.
 mkNumParser
-  :: (MonadFail m, MonadParsec e s m, Num a)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Num a
   => m (Token s)
   -- ^ Minus-sign parser.
   -> m a

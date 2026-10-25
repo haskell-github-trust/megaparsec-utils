@@ -53,14 +53,18 @@ import Text.Megaparsec.Utils.Common (
 
 -- | Parse a case-insensitive human-readable boolean, including C-style numbers,
 -- English yes-no and @on@ / @off@.
-boolParser :: (MonadParsec e s m, Token s ~ Char) => m Bool
+boolParser
+  :: MonadParsec e s m
+  => Token s ~ Char
+  => m Bool
 boolParser = mkBoolParser char' id
 
 -- | Parse a 'Bounded' 'Enum' type that has a 'Show' instance, trying all
 -- possibilities, case-insensitive, in the 'Enum' order.
 boundedEnumShowParser
   :: forall a e s m
-   . (MonadParsec e s m, Token s ~ Char)
+   . MonadParsec e s m
+  => Token s ~ Char
   => Bounded a
   => Enum a
   => Show a
@@ -69,26 +73,37 @@ boundedEnumShowParser = mkBoundedEnumShowParser char' id
 
 -- | Parse a comma-separated list of items.
 commaSeparated
-  :: (MonadParsec e s m, Token s ~ Char)
+  :: MonadParsec e s m
+  => Token s ~ Char
   => m a
   -> m (NonEmpty a)
 commaSeparated = mkCommaSeparated (char ',')
 
 -- | Parse a positive number, with or without decimals prefixed by a @.@.
 posDecNumParser
-  :: (MonadFail m, MonadParsec e s m, Read a, Token s ~ Char)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Read a
+  => Token s ~ Char
   => m a
 posDecNumParser = mkPosDecNumParser digitChar (char '.') id
 
 -- | Parse a positive integer.
 posNumParser
-  :: (MonadFail m, MonadParsec e s m, Read a, Token s ~ Char)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Read a
+  => Token s ~ Char
   => m a
 posNumParser = mkPosNumParser digitChar id
 
 -- | Parse an integer, without any space between minus sign and digits.
 numParser
-  :: (MonadFail m, MonadParsec e s m, Num a, Read a, Token s ~ Char)
+  :: MonadFail m
+  => MonadParsec e s m
+  => Num a
+  => Read a
+  => Token s ~ Char
   => m a
 numParser = mkNumParser (char '-') posNumParser
 
@@ -106,6 +121,7 @@ parsecToJSONParser n p =
 
 -- | Parse a RFC4122-compliant UUID.
 uuidParser
-  :: (MonadParsec e s m, Token s ~ Char)
+  :: MonadParsec e s m
+  => Token s ~ Char
   => m UUID
 uuidParser = mkUuidParser hexDigitChar (char '-') id
