@@ -10,6 +10,9 @@ jobs:
   build:
     name: Semantic release
     runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,7 +31,6 @@ jobs:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
 
         with:
-          ci: ${{ github.ref == github.event.repository.default_branch }}
           extra_plugins: |
             conventional-changelog-conventionalcommits
             @semantic-release/changelog
@@ -36,14 +38,15 @@ jobs:
             github:haskell-github-trust/semantic-release-haddock-since
 
       - name: Semantic release output
+        env:
+          RELEASE_NOTES: "${{ steps.semantic.outputs.new_release_notes }}"
         run: |
           echo ref: ${{ github.ref }}
-          echo dry_run: ${{ github.ref_name != github.event.repository.default_branch }}
           echo published: ${{ steps.semantic.outputs.new_release_published }}
           echo last_release: ${{ steps.semantic.outputs.last_release_version }}
           echo new_version: ${{ steps.semantic.outputs.new_release_version }}
           echo git_head: ${{ steps.semantic.outputs.new_release_git_head }}
 
           echo release_notes:
-          echo "${{ steps.semantic.outputs.new_release_notes }}"
+          echo "$RELEASE_NOTES"
 ...
