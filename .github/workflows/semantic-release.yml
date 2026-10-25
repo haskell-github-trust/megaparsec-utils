@@ -26,7 +26,6 @@ jobs:
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: "${{ steps.app-token.outputs.token }}"
-          HACKAGE_KEY: "${{ secrets.HACKAGE_TOKEN }}"
 
         with:
           ci: ${{ github.ref == github.event.repository.default_branch }}
@@ -35,7 +34,6 @@ jobs:
             @semantic-release/changelog
             @semantic-release/git
             github:haskell-github-trust/semantic-release-haddock-since
-            semantic-release-stack-upload
 
       - name: Semantic release output
         run: |

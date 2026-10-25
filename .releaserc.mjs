@@ -34,6 +34,5 @@ export default {
       },
     ],
     "@semantic-release/github",
-    "semantic-release-stack-upload",
   ],
 }
