@@ -204,20 +204,20 @@ spec = do
   describe "occurrences" $ do
     it "SomeData" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeData), suffix]
-      parseOrPrettyError (occurrences someDataParser) s `shouldBe` Right [v]
+      parseOrPrettyError (occurrences someDataParser) s `shouldBe` Right (pure v)
 
     context "SomeEnum" $ do
       it "words" . forAll input $ \(prefix, v, suffix) -> do
         let s = unwords [prefix, show (v :: SomeEnum), suffix]
-        parseOrPrettyError (occurrences someEnumParser) s `shouldBe` Right [v]
+        parseOrPrettyError (occurrences someEnumParser) s `shouldBe` Right (pure v)
 
       it "with partial" $
         parseOrPrettyError (occurrences someEnumParser) "a [Some] SomeA yo"
-          `shouldBe` Right [SomeA]
+          `shouldBe` Right (pure SomeA)
 
     it "SomeADT" . forAll input $ \(prefix, v, suffix) -> do
       let s = unwords [prefix, show (v :: SomeADT), suffix]
-      parseOrPrettyError (occurrences someADTParser) s `shouldBe` Right [v]
+      parseOrPrettyError (occurrences someADTParser) s `shouldBe` Right (pure v)
 
   describe "comma-separated" $ do
     context "valid" $ do

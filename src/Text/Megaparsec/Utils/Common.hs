@@ -29,6 +29,7 @@ import Control.Applicative (many, some, (<|>))
 import Control.Applicative.Combinators (choice)
 import Control.Monad (replicateM)
 import Control.Monad.Combinators (optional)
+import qualified Control.Monad.Combinators.NonEmpty as NE (some)
 import Data.Foldable (traverse_)
 import Data.Functor (($>))
 import Data.List (intercalate, sortOn)
@@ -50,8 +51,8 @@ occurrence p = go
 -- | Parse all occurrences of a given parser.
 --
 -- @since 0.2.0.0
-occurrences :: MonadParsec e s m => m a -> m [a]
-occurrences = some . try . occurrence . try
+occurrences :: MonadParsec e s m => m a -> m (NonEmpty a)
+occurrences = NE.some . try . occurrence . try
 
 -- | Build a case-insensitive human-readable boolean parser, including C-style
 -- numbers, English yes-no and @on@ / @off@.
@@ -66,8 +67,8 @@ mkBoolParser
   -> m Bool
 mkBoolParser char' fromChar = true <|> false
  where
-  true = True <$ choice (map (try . traverse_ (char' . fromChar)) ["true", "y", "yes", "on", "1"])
-  false = False <$ choice (map (try . traverse_ (char' . fromChar)) ["false", "n", "no", "off", "0"])
+  true = True <$ choice (fmap (try . traverse_ (char' . fromChar)) ["true", "y", "yes", "on", "1"])
+  false = False <$ choice (fmap (try . traverse_ (char' . fromChar)) ["false", "n", "no", "off", "0"])
 
 -- | Build a parser for a 'Bounded' 'Enum' type that has a 'Show' instance,
 -- trying all possibilities, case-insensitive, in the 'Enum' order.
@@ -85,7 +86,7 @@ mkBoundedEnumShowParser
   -- ^ Convert a literal 'Char' to a token.
   -> m a
 mkBoundedEnumShowParser char' fromChar =
-  choice . map parseShow $ sortOn (negate . length . show) [(minBound :: a) ..]
+  choice . fmap parseShow $ sortOn (negate . length . show) [(minBound :: a) ..]
  where
   parseShow a = try (traverse_ (char' . fromChar) (show a)) $> a
 
@@ -119,7 +120,7 @@ mkPosDecNumParser digitChar dot toChar = do
   num <- some digitChar
   dec <- optional (dot >> some digitChar)
 
-  let toStr = map toChar
+  let toStr = fmap toChar
       str = toStr num <> maybe "" (('.' :) . toStr) dec
 
   maybe (fail ("could not read from input: " <> str)) pure (readMaybe str)
@@ -138,7 +139,7 @@ mkPosNumParser
   -> m a
 mkPosNumParser digitChar toChar = do
   digits <- some digitChar
-  let str = map toChar digits
+  let str = fmap toChar digits
   maybe
     (fail ("could not read from digits: " <> str))
     pure
@@ -178,11 +179,11 @@ mkUuidParser hexDigitChar dash toChar = do
   part4 <- replicateM 4 hexDigitChar <* dash
   part5 <- replicateM 12 hexDigitChar
 
-  let toStr = map toChar
+  let toStr = fmap toChar
 
   pure
     ( fromJust
         ( U.fromString
-            (intercalate "-" (map toStr [part1, part2, part3, part4, part5]))
+            (intercalate "-" (toStr <$> [part1, part2, part3, part4, part5]))
         )
     )
